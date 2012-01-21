@@ -1,7 +1,7 @@
 package main
 
 import (
-//	"fmt"
+	"fmt"
 	"http"
 	"log"
 	"json"
@@ -10,9 +10,9 @@ import (
 //	"strconv"
 //	"strings"
 //	"xml"
+	"github.com/nathankerr/rest.go"
 	"launchpad.net/mgo"
 	"launchpad.net/gobson/bson"
-	"github.com/nathankerr/rest.go"
 )
 
 var formatting = "formatting instructions go here"
@@ -49,16 +49,26 @@ func (mr *MongoRest) Find(w http.ResponseWriter, idString string) {
 	enc.Encode(&result)
 }
 
+type Game struct {
+	Name string
+	_id bson.ObjectId
+}
+
 // Create and add a new document to the collection
 func (mr *MongoRest) Create(w http.ResponseWriter, r *http.Request) {
-	var result interface{}
+	var result Game
 	dec := json.NewDecoder(r.Body)
-	if err := dec.Decode(result); err != nil {
-		rest.BadRequest(w, formatting)
+	if err := dec.Decode(&result); err != nil {
+		rest.BadRequest(w, err.String())
 		return
 	}
 
-//	id := finances.Add(string(data))
+	if err := mr.col.Insert(result); err != nil {
+		rest.BadRequest(w, "later")
+		return
+        }
+
+	id := result._id
 	rest.Created(w, fmt.Sprintf("%v%v", r.URL.String(), id))
 }
 
@@ -113,7 +123,7 @@ func NewMongoRest(col mgo.Collection) (*MongoRest) {
 func main() {
 	log.Printf("Connecting to mongodb")
 
-	session, err := mgo.Mongo("localhost")
+	session, err := mgo.Mongo("172.16.1.63")
 	if err != nil {
 		log.Fatal(err)
 		return
