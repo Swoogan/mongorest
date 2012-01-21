@@ -1,0 +1,6 @@
+- patch rest.go and send it in
+- add all basic methods
+- figure out how to make it generic
+- turn from program to library
+- implement tests
+

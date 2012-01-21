@@ -56,20 +56,22 @@ type Game struct {
 
 // Create and add a new document to the collection
 func (mr *MongoRest) Create(w http.ResponseWriter, r *http.Request) {
-	var result Game
+	var result interface {}
 	dec := json.NewDecoder(r.Body)
 	if err := dec.Decode(&result); err != nil {
 		rest.BadRequest(w, err.String())
 		return
 	}
 
-	if err := mr.col.Insert(result); err != nil {
-		rest.BadRequest(w, "later")
-		return
-        }
+	fmt.Fprint(w, result.Name)
 
-	id := result._id
-	rest.Created(w, fmt.Sprintf("%v%v", r.URL.String(), id))
+//	if err := mr.col.Insert(result); err != nil {
+//		rest.BadRequest(w, "later")
+//		return
+//        }
+
+//	id := result._id
+//	rest.Created(w, fmt.Sprintf("%v%v", r.URL.String(), id))
 }
 
 // Update a snip identified by an ID with the data sent as request-body
