@@ -34,9 +34,10 @@ func (mr *MongoRest) Index(w http.ResponseWriter) {
 	enc.Encode(&result)
 }
 
-// Find a snip from the collection, identified by the ID
+// Find a document in the collection, identified by the ID
 func (mr *MongoRest) Find(w http.ResponseWriter, idString string) {
 	var result interface{}
+	// TODO: validate the Id first
 	id := bson.ObjectIdHex(idString)
 	err := mr.col.Find(bson.M{"_id": id}).One(&result)
 	if err != nil {
@@ -51,7 +52,7 @@ func (mr *MongoRest) Find(w http.ResponseWriter, idString string) {
 
 type Game struct {
 	Name string
-	_id bson.ObjectId
+	Id bson.ObjectId "_id,omitempty"
 }
 
 // Create and add a new document to the collection
@@ -63,50 +64,43 @@ func (mr *MongoRest) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	result.Id = bson.NewObjectId()
+
 	if err := mr.col.Insert(result); err != nil {
 		rest.BadRequest(w, "later")
 		return
         }
 
-	id := "don't know"
-	rest.Created(w, fmt.Sprintf("%v%v", r.URL.String(), id))
+	rest.Created(w, fmt.Sprintf("%v%v", r.URL.String(), result.Id.Hex()))
 }
 
-// Update a snip identified by an ID with the data sent as request-body
-func (mr *MongoRest) Update(w http.ResponseWriter, idString string, request *http.Request) {
-	// Parse ID of type string to int
-//	var id int
-//	var err os.Error
-//	if id, err = strconv.Atoi(idString); err != nil {
-//		// The ID could not be converted from string to int
-//		rest.NotFound(w)
-//		return
-//	}
+// Update a document identified by an ID with the data sent as request-body
+func (mr *MongoRest) Update(w http.ResponseWriter, idString string, r *http.Request) {
+	var game Game
+	dec := json.NewDecoder(r.Body)
+	if err := dec.Decode(&game); err != nil {
+		rest.BadRequest(w, formatting)
+		return
+	}
 
-	// Find the snip with the ID
-//	var snip *Snip
-//	var ok bool
-//	if snip, ok = finances.WithId(id); !ok {
-		// A snip with the passed ID could not be found in our collection
-//		rest.NotFound(w)
-//	}
+	// TODO: validate the Id first
+	id := bson.ObjectIdHex(idString)
 
-	// Get the request-body for data to update the snipped to
-//	var data []byte
-//	if data, err = ioutil.ReadAll(request.Body); err != nil {
-//		// The request body could not be read, thus it was a bad request
-//		rest.BadRequest(w, formatting)
-//		return
-//	}
+	err := mr.col.Update(bson.M{"_id": id}, game)
+	if err == mgo.NotFound {
+		rest.NotFound(w)
+		return
+	} else if err != nil {
+		// TODO: what to do if the doc doesn't insert?
+	}
 
-	// Set the finances body
-//	snip.Body = string(data)
 	// Respond to indicate successful update
-	rest.Updated(w, request.URL.String())
+	rest.Updated(w, r.URL.String())
 }
 
 // Delete a snip identified by ID from the collection
 func (mr *MongoRest) Delete(w http.ResponseWriter, idString string) {
+	// TODO: validate the Id first
 	id := bson.ObjectIdHex(idString)
 	err := mr.col.Remove(bson.M{"_id": id})
 	if err != nil {
