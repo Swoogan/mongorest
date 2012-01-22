@@ -9,7 +9,6 @@ import (
 //	"strconv"
 //	"strings"
 //	"xml"
-	"github.com/nathankerr/rest.go"
 	"launchpad.net/mgo"
 	"launchpad.net/gobson/bson"
 )
@@ -23,42 +22,37 @@ func (g *Game) getId() string {
 	return g.Id.Hex()
 }
 
-func (g *Game) setId(id bson.ObjectId) {
-	g.Id = id
+func (g *Game) newId() {
+	g.Id = bson.NewObjectId()
 }
 
-type GameDecoder struct {}
+type GameJsonDecoder struct {}
 
-func NewGameDecoder() *GameDecoder {
-        return &GameDecoder{}
-}
-
-func (dr *GameDecoder) DecodeJson(d *json.Decoder) (Colly, os.Error) {
+func (dr GameJsonDecoder) DecodeJson(d *json.Decoder) (Document, os.Error) {
         var result Game
         err := d.Decode(&result)
         return &result, err
 }
 
 type Finance struct {
-	Name string
 	Id bson.ObjectId "_id,omitempty"
+	Balance float64
+	Game string
+	Income float64
+	Wallet float64
 }
 
 func (g *Finance) getId() string {
 	return g.Id.Hex()
 }
 
-func (g *Finance) setId(id bson.ObjectId) {
-	g.Id = id
+func (g *Finance) newId() {
+	g.Id = bson.NewObjectId()
 }
 
-type FinanceDecoder struct {}
+type FinanceJsonDecoder struct {}
 
-func NewFinanceDecoder() *FinanceDecoder {
-        return &FinanceDecoder{}
-}
-
-func (dr *FinanceDecoder) DecodeJson(d *json.Decoder) (Colly, os.Error) {
+func (dr FinanceJsonDecoder) DecodeJson(d *json.Decoder) (Document, os.Error) {
         var result Finance
         err := d.Decode(&result)
         return &result, err
@@ -75,15 +69,13 @@ func main() {
 	}
 	defer session.Close()
 
-	col := session.DB("uken").C("finances")
-	fd := NewFinanceDecoder()
-	resource := NewMongoRest(col, fd)
-	rest.Resource("finances", resource)
+	db := session.DB("uken")
 
-	col = session.DB("uken").C("games")
-	gd := NewGameDecoder()
-	resource = NewMongoRest(col, gd)
-	rest.Resource("games", resource)
+	fd := FinanceJsonDecoder{}
+	NewMongoRest(db, "finances", fd)
+
+	gd := GameJsonDecoder{}
+	NewMongoRest(db, "games", gd)
 
 	log.Printf("About to listen on 4040")
 	err = http.ListenAndServe(":4040", nil)
