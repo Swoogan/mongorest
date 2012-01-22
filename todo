@@ -1,6 +1,10 @@
+- better error handling
 - patch rest.go and send it in
-- add all basic methods
 - figure out how to make it generic
 - turn from program to library
 - implement tests
+- add more complex methods
+
+DONE:
+- add all basic methods
 
