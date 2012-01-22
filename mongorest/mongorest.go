@@ -19,7 +19,7 @@ var formatting = "Valid JSON is required"
 
 type MongoRest struct {
 	col mgo.Collection
-	decoder JsonDecoder
+	json JsonDecoder
 }
 
 
@@ -51,25 +51,16 @@ func (mr *MongoRest) Find(w http.ResponseWriter, idString string) {
 	enc.Encode(&result)
 }
 
-type Colly interface {
-	getId() string
-	setId(bson.ObjectId)
-}
-
-type JsonDecoder interface {
-	DecodeJson(d *json.Decoder) (Colly, os.Error)
-}
-
 // Create and add a new document to the collection
 func (mr *MongoRest) Create(w http.ResponseWriter, r *http.Request) {
 	dec := json.NewDecoder(r.Body)
-	result, err := mr.decoder.DecodeJson(dec);
+	result, err := mr.json.DecodeJson(dec);
 	if err != nil {
 		rest.BadRequest(w, formatting)
 		return
 	}
 
-	result.setId(bson.NewObjectId())
+	result.newId()
 
 	if err := mr.col.Insert(result); err != nil {
 		rest.BadRequest(w, "later")
@@ -82,7 +73,7 @@ func (mr *MongoRest) Create(w http.ResponseWriter, r *http.Request) {
 // Update a document identified by an ID with the data sent as request-body
 func (mr *MongoRest) Update(w http.ResponseWriter, idString string, r *http.Request) {
 	dec := json.NewDecoder(r.Body)
-	result, err := mr.decoder.DecodeJson(dec);
+	result, err := mr.json.DecodeJson(dec);
 	if err != nil {
 		rest.BadRequest(w, formatting)
 		return
@@ -116,9 +107,26 @@ func (mr *MongoRest) Delete(w http.ResponseWriter, idString string) {
 	rest.NoContent(w)
 }
 
-func NewMongoRest(col mgo.Collection, decoder JsonDecoder) *MongoRest {
-	return &MongoRest {
-		col: col,
-		decoder: decoder,
+func NewMongoRest(db mgo.Database, resource string, json JsonDecoder) *MongoRest {
+	mr :=  &MongoRest {
+		col: db.C(resource),
+		json: json,
 	}
+
+	rest.Resource(resource, mr)
+
+	return mr
+}
+
+type Document interface {
+	getId() string
+	newId()
+}
+
+type JsonDecoder interface {
+	DecodeJson(d *json.Decoder) (Document, os.Error)
+}
+
+type XmlDecoder interface {
+	DecodeXml() (Document, os.Error)
 }
