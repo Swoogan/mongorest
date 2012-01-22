@@ -15,7 +15,7 @@ import (
 	"launchpad.net/gobson/bson"
 )
 
-var formatting = "formatting instructions go here"
+var formatting = "Valid JSON is required"
 
 type MongoRest struct {
 	col mgo.Collection
@@ -59,19 +59,17 @@ func (mr *MongoRest) Create(w http.ResponseWriter, r *http.Request) {
 	var result interface {}
 	dec := json.NewDecoder(r.Body)
 	if err := dec.Decode(&result); err != nil {
-		rest.BadRequest(w, err.String())
+		rest.BadRequest(w, formatting)
 		return
 	}
 
-	fmt.Fprint(w, result.Name)
+	if err := mr.col.Insert(result); err != nil {
+		rest.BadRequest(w, "later")
+		return
+        }
 
-//	if err := mr.col.Insert(result); err != nil {
-//		rest.BadRequest(w, "later")
-//		return
-//        }
-
-//	id := result._id
-//	rest.Created(w, fmt.Sprintf("%v%v", r.URL.String(), id))
+	id := "don't know"
+	rest.Created(w, fmt.Sprintf("%v%v", r.URL.String(), id))
 }
 
 // Update a snip identified by an ID with the data sent as request-body
