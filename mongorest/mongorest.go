@@ -5,7 +5,7 @@ import (
 	"http"
 	"log"
 	"json"
-//	"os"
+	"os"
 //	"io/ioutil"
 //	"strconv"
 //	"strings"
@@ -19,6 +19,7 @@ var formatting = "Valid JSON is required"
 
 type MongoRest struct {
 	col mgo.Collection
+	decoder JsonDecoder
 }
 
 
@@ -50,35 +51,39 @@ func (mr *MongoRest) Find(w http.ResponseWriter, idString string) {
 	enc.Encode(&result)
 }
 
-type Game struct {
-	Name string
-	Id bson.ObjectId "_id,omitempty"
+type Colly interface {
+	getId() string
+	setId(bson.ObjectId)
+}
+
+type JsonDecoder interface {
+	DecodeJson(d *json.Decoder) (Colly, os.Error)
 }
 
 // Create and add a new document to the collection
 func (mr *MongoRest) Create(w http.ResponseWriter, r *http.Request) {
-	var result interface {}
 	dec := json.NewDecoder(r.Body)
-	if err := dec.Decode(&result); err != nil {
+	result, err := mr.decoder.DecodeJson(dec);
+	if err != nil {
 		rest.BadRequest(w, formatting)
 		return
 	}
 
-	result.Id = bson.NewObjectId()
+	result.setId(bson.NewObjectId())
 
 	if err := mr.col.Insert(result); err != nil {
 		rest.BadRequest(w, "later")
 		return
         }
 
-	rest.Created(w, fmt.Sprintf("%v%v", r.URL.String(), result.Id.Hex()))
+	rest.Created(w, fmt.Sprintf("%v%v", r.URL.String(), result.getId()))
 }
 
 // Update a document identified by an ID with the data sent as request-body
 func (mr *MongoRest) Update(w http.ResponseWriter, idString string, r *http.Request) {
-	var game Game
 	dec := json.NewDecoder(r.Body)
-	if err := dec.Decode(&game); err != nil {
+	result, err := mr.decoder.DecodeJson(dec);
+	if err != nil {
 		rest.BadRequest(w, formatting)
 		return
 	}
@@ -86,11 +91,12 @@ func (mr *MongoRest) Update(w http.ResponseWriter, idString string, r *http.Requ
 	// TODO: validate the Id first
 	id := bson.ObjectIdHex(idString)
 
-	err := mr.col.Update(bson.M{"_id": id}, game)
+	err = mr.col.Update(bson.M{"_id": id}, result)
 	if err == mgo.NotFound {
 		rest.NotFound(w)
 		return
 	} else if err != nil {
+		log.Println(err.String())
 		// TODO: what to do if the doc doesn't insert?
 	}
 
@@ -110,31 +116,9 @@ func (mr *MongoRest) Delete(w http.ResponseWriter, idString string) {
 	rest.NoContent(w)
 }
 
-func NewMongoRest(col mgo.Collection) (*MongoRest) {
-	return &MongoRest {col: col}
-}
-
-func main() {
-	log.Printf("Connecting to mongodb")
-
-	session, err := mgo.Mongo("172.16.1.63")
-	if err != nil {
-		log.Fatal(err)
-		return
-	}
-	defer session.Close()
-	col := session.DB("uken").C("finances")
-
-	resource := NewMongoRest(col)
-	rest.Resource("finances", resource)
-
-	col = session.DB("uken").C("games")
-	resource = NewMongoRest(col)
-	rest.Resource("games", resource)
-
-	log.Printf("About to listen on 4040")
-	err = http.ListenAndServe(":4040", nil)
-	if err != nil {
-		log.Fatal(err)
+func NewMongoRest(col mgo.Collection, decoder JsonDecoder) *MongoRest {
+	return &MongoRest {
+		col: col,
+		decoder: decoder,
 	}
 }
