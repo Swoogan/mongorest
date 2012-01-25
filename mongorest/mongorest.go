@@ -10,7 +10,7 @@ import (
 //	"strconv"
 //	"strings"
 //	"xml"
-	"github.com/nathankerr/rest.go"
+	"github.com/Swoogan/rest.go"
 	"launchpad.net/mgo"
 	"launchpad.net/gobson/bson"
 )
@@ -24,7 +24,7 @@ type MongoRest struct {
 
 
 // Get all of the documents in the mongo collection 
-func (mr *MongoRest) Index(w http.ResponseWriter) {
+func (mr *MongoRest) Index(w http.ResponseWriter, r *http.Request) {
 	var result []interface{}
 	if err := mr.col.Find(nil).Limit(100).All(&result); err != nil {
 		panic(err)
@@ -36,7 +36,7 @@ func (mr *MongoRest) Index(w http.ResponseWriter) {
 }
 
 // Find a document in the collection, identified by the ID
-func (mr *MongoRest) Find(w http.ResponseWriter, idString string) {
+func (mr *MongoRest) Find(w http.ResponseWriter, idString string, r *http.Request) {
 	var result interface{}
 	// TODO: validate the Id first
 	id := bson.ObjectIdHex(idString)
@@ -96,7 +96,7 @@ func (mr *MongoRest) Update(w http.ResponseWriter, idString string, r *http.Requ
 }
 
 // Delete a snip identified by ID from the collection
-func (mr *MongoRest) Delete(w http.ResponseWriter, idString string) {
+func (mr *MongoRest) Delete(w http.ResponseWriter, idString string, r *http.Request) {
 	// TODO: validate the Id first
 	id := bson.ObjectIdHex(idString)
 	err := mr.col.Remove(bson.M{"_id": id})
