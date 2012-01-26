@@ -9,7 +9,7 @@ import (
 //	"io/ioutil"
 //	"strconv"
 //	"strings"
-//	"xml"
+	"xml"
 	"github.com/Swoogan/rest.go"
 	"launchpad.net/mgo"
 	"launchpad.net/gobson/bson"
@@ -22,6 +22,12 @@ type MongoRest struct {
 	json JsonDecoder
 }
 
+func writeHtml(w http.ResponseWriter, items []interface{}) {
+	for _, item := range items {
+		fmt.Fprint(w, string(item))
+	}
+}
+
 
 // Get all of the documents in the mongo collection 
 func (mr *MongoRest) Index(w http.ResponseWriter, r *http.Request) {
@@ -30,9 +36,20 @@ func (mr *MongoRest) Index(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
-	enc := json.NewEncoder(w)
-	w.Header().Set("content-type", "application/json")
-	enc.Encode(&result)
+	switch accept := r.Header.Get("accept"); {
+	case accept == "application/json":
+		enc := json.NewEncoder(w)
+		w.Header().Set("content-type", "application/json")
+		enc.Encode(&result)
+	case accept == "text/html":
+		w.Header().Set("content-type", "text/html")
+		writeHtml(w, result)
+	default:
+		w.WriteHeader(http.StatusNotAcceptable)
+	}
+
+//	log.Println(r.Header.Get("content-type"))
+//	log.Println(accept)
 }
 
 // Find a document in the collection, identified by the ID
