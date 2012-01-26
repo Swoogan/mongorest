@@ -1,9 +1,11 @@
-- better error handling
 - implement tests
-- patch rest.go and send it in
+- better error handling
+- add content-type sending and accept receiving
 - add more complex methods
+- figure out how to eliminate the struct required for decoding objects
 
 DONE:
+- patch rest.go and send it in
 - add all basic methods
 - figure out how to make it generic
 - turn from program to library
