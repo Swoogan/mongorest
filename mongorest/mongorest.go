@@ -17,6 +17,22 @@ import (
 
 var formatting = "Valid JSON is required"
 
+func toString(val interface{}) string {
+	var result string
+
+	switch v := val.(type) {
+	case int, int32, int64, float32, float64:
+		result = fmt.Sprintf("%v", val)
+	case bson.ObjectId:
+		o, _ := val.(bson.ObjectId)
+		result = o.Hex()
+	default:
+		result = "unknown"
+	}
+
+	return result
+}
+
 type MongoRest struct {
 	col mgo.Collection
 	json JsonDecoder
@@ -70,11 +86,11 @@ func (mr *MongoRest) Find(w http.ResponseWriter, idString string, r *http.Reques
 		enc := json.NewEncoder(w)
 		w.Header().Set("content-type", "application/json")
 		enc.Encode(&result)
-	case strings.Contains(accept, "text/html"):
-		w.Header().Set("content-type", "text/html")
-		for key, value := range result {
-			fmt.Fprintf(w, "%v: %v<br />", key, value)
-		}
+//	case strings.Contains(accept, "text/html"):
+//		w.Header().Set("content-type", "text/html")
+//		for key, value := range result {
+//			fmt.Fprintf(w, "%v: %v<br />", key, value)
+//		}
 	default:
 		w.WriteHeader(http.StatusNotAcceptable)
 	}
@@ -85,26 +101,29 @@ func (mr *MongoRest) Create(w http.ResponseWriter, r *http.Request) {
 	dec := json.NewDecoder(r.Body)
         var result map[string]interface{}
         err := dec.Decode(&result)
-	//result, err := mr.json.DecodeJson(dec);
 	if err != nil {
 		rest.BadRequest(w, formatting)
 		return
 	}
 
-	result["_id"] = bson.NewObjectId()
+	if result["_id"] == nil {
+		result["_id"] = bson.NewObjectId()
+	}
 
 	if err := mr.col.Insert(result); err != nil {
 		rest.BadRequest(w, "Could not insert document")
 		return
         }
 
-	rest.Created(w, fmt.Sprintf("%v%v", r.URL.String(), result["_id"]))
+	output := fmt.Sprintf("%v%v", r.URL.String(), toString(result["_id"]))
+	rest.Created(w, output)
 }
 
 // Update a document identified by an ID with the data sent as request-body
 func (mr *MongoRest) Update(w http.ResponseWriter, idString string, r *http.Request) {
 	dec := json.NewDecoder(r.Body)
-	result, err := mr.json.DecodeJson(dec);
+        var result map[string]interface{}
+        err := dec.Decode(&result)
 	if err != nil {
 		rest.BadRequest(w, formatting)
 		return
@@ -119,7 +138,7 @@ func (mr *MongoRest) Update(w http.ResponseWriter, idString string, r *http.Requ
 		return
 	} else if err != nil {
 		log.Println(err.String())
-		// TODO: what to do if the doc doesn't insert?
+		// TODO: what to do if the doc doesn't update?
 	}
 
 	// Respond to indicate successful update
