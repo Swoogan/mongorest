@@ -8,8 +8,8 @@ import (
 	"os"
 //	"io/ioutil"
 //	"strconv"
-//	"strings"
-	"xml"
+	"strings"
+//	"xml"
 	"github.com/Swoogan/rest.go"
 	"launchpad.net/mgo"
 	"launchpad.net/gobson/bson"
@@ -22,26 +22,28 @@ type MongoRest struct {
 	json JsonDecoder
 }
 
-func writeHtml(w http.ResponseWriter, items []interface{}) {
+func writeHtml(w http.ResponseWriter, items []map[string]interface{}) {
 	for _, item := range items {
-		fmt.Fprint(w, string(item))
+		for key, value := range item {
+			fmt.Fprintf(w, "%v: %v<br />", key, value)
+		}
 	}
 }
 
-
 // Get all of the documents in the mongo collection 
 func (mr *MongoRest) Index(w http.ResponseWriter, r *http.Request) {
-	var result []interface{}
-	if err := mr.col.Find(nil).Limit(100).All(&result); err != nil {
+	var result []map[string]interface{};
+	err := mr.col.Find(nil).Limit(100).All(&result)
+	if err != nil {
 		panic(err)
 	}
 
 	switch accept := r.Header.Get("accept"); {
-	case accept == "application/json":
+	case strings.Contains(accept, "application/json"):
 		enc := json.NewEncoder(w)
 		w.Header().Set("content-type", "application/json")
 		enc.Encode(&result)
-	case accept == "text/html":
+	case strings.Contains(accept, "text/html"):
 		w.Header().Set("content-type", "text/html")
 		writeHtml(w, result)
 	default:
@@ -54,7 +56,7 @@ func (mr *MongoRest) Index(w http.ResponseWriter, r *http.Request) {
 
 // Find a document in the collection, identified by the ID
 func (mr *MongoRest) Find(w http.ResponseWriter, idString string, r *http.Request) {
-	var result interface{}
+	var result map[string]interface{}
 	// TODO: validate the Id first
 	id := bson.ObjectIdHex(idString)
 	err := mr.col.Find(bson.M{"_id": id}).One(&result)
@@ -63,28 +65,40 @@ func (mr *MongoRest) Find(w http.ResponseWriter, idString string, r *http.Reques
 		return
 	}
 
-	enc := json.NewEncoder(w)
-	w.Header().Set("content-type", "application/json")
-	enc.Encode(&result)
+	switch accept := r.Header.Get("accept"); {
+	case strings.Contains(accept, "application/json"):
+		enc := json.NewEncoder(w)
+		w.Header().Set("content-type", "application/json")
+		enc.Encode(&result)
+	case strings.Contains(accept, "text/html"):
+		w.Header().Set("content-type", "text/html")
+		for key, value := range result {
+			fmt.Fprintf(w, "%v: %v<br />", key, value)
+		}
+	default:
+		w.WriteHeader(http.StatusNotAcceptable)
+	}
 }
 
 // Create and add a new document to the collection
 func (mr *MongoRest) Create(w http.ResponseWriter, r *http.Request) {
 	dec := json.NewDecoder(r.Body)
-	result, err := mr.json.DecodeJson(dec);
+        var result map[string]interface{}
+        err := dec.Decode(&result)
+	//result, err := mr.json.DecodeJson(dec);
 	if err != nil {
 		rest.BadRequest(w, formatting)
 		return
 	}
 
-	result.newId()
+	result["_id"] = bson.NewObjectId()
 
 	if err := mr.col.Insert(result); err != nil {
-		rest.BadRequest(w, "later")
+		rest.BadRequest(w, "Could not insert document")
 		return
         }
 
-	rest.Created(w, fmt.Sprintf("%v%v", r.URL.String(), result.getId()))
+	rest.Created(w, fmt.Sprintf("%v%v", r.URL.String(), result["_id"]))
 }
 
 // Update a document identified by an ID with the data sent as request-body
