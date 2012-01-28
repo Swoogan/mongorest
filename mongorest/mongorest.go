@@ -43,9 +43,9 @@ func (mr *MongoRest) Index(w http.ResponseWriter, r *http.Request) {
 		enc := json.NewEncoder(w)
 		w.Header().Set("content-type", "application/json")
 		enc.Encode(&result)
-	case strings.Contains(accept, "text/html"):
-		w.Header().Set("content-type", "text/html")
-		writeHtml(w, result)
+//	case strings.Contains(accept, "text/html"):
+//		w.Header().Set("content-type", "text/html")
+//		writeHtml(w, result)
 	default:
 		w.WriteHeader(http.StatusNotAcceptable)
 	}
