@@ -1,8 +1,10 @@
-- implement looking up by numbers
+- implement looking up by dates
 - implement tests
+	tests are out for now, don't know how to mock the database and web server
 - add more complex methods
 
 DONE:
+- implement looking up by numbers
 - figure out how to eliminate the struct required for decoding objects
 - add content-type sending and accept receiving
 - better error handling
