@@ -1,10 +1,11 @@
+- implement looking up by numbers
 - implement tests
-- better error handling
-- add content-type sending and accept receiving
 - add more complex methods
-- figure out how to eliminate the struct required for decoding objects
 
 DONE:
+- figure out how to eliminate the struct required for decoding objects
+- add content-type sending and accept receiving
+- better error handling
 - patch rest.go and send it in
 - add all basic methods
 - figure out how to make it generic

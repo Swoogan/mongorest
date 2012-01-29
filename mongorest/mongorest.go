@@ -6,36 +6,25 @@ import (
 	"log"
 	"json"
 	"os"
-//	"io/ioutil"
-//	"strconv"
 	"strings"
-//	"xml"
 	"github.com/Swoogan/rest.go"
 	"launchpad.net/mgo"
 	"launchpad.net/gobson/bson"
+	"sre2.googlecode.com/hg/sre2"
 )
 
 var formatting = "Valid JSON is required"
 
 func toString(val interface{}) string {
-	var result string
-
 	switch v := val.(type) {
 	case int, int32, int64, float32, float64:
-		result = fmt.Sprintf("%v", val)
+		return fmt.Sprintf("%v", val)
 	case bson.ObjectId:
 		o, _ := val.(bson.ObjectId)
-		result = o.Hex()
-	default:
-		result = "unknown"
+		return o.Hex()
 	}
 
-	return result
-}
-
-type MongoRest struct {
-	col mgo.Collection
-	json JsonDecoder
+	return "unknown"
 }
 
 func writeHtml(w http.ResponseWriter, items []map[string]interface{}) {
@@ -46,12 +35,27 @@ func writeHtml(w http.ResponseWriter, items []map[string]interface{}) {
 	}
 }
 
+func createIdLookup(id string)  bson.M {
+	// TODO: add numbers to this
+	reg := sre2.MustParse("^[0-9a-f]{24}$")
+
+	if reg.Match(id) {
+		return bson.M{"_id": bson.ObjectIdHex(id)}
+	}
+
+	return bson.M{"_id": id}
+}
+
+type MongoRest struct {
+	col mgo.Collection
+}
+
 // Get all of the documents in the mongo collection 
 func (mr *MongoRest) Index(w http.ResponseWriter, r *http.Request) {
 	var result []map[string]interface{};
 	err := mr.col.Find(nil).Limit(100).All(&result)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
 	switch accept := r.Header.Get("accept"); {
@@ -73,10 +77,8 @@ func (mr *MongoRest) Index(w http.ResponseWriter, r *http.Request) {
 // Find a document in the collection, identified by the ID
 func (mr *MongoRest) Find(w http.ResponseWriter, idString string, r *http.Request) {
 	var result map[string]interface{}
-	// TODO: validate the Id first
-	id := bson.ObjectIdHex(idString)
-	err := mr.col.Find(bson.M{"_id": id}).One(&result)
-	if err != nil {
+	id := createIdLookup(idString)
+	if err := mr.col.Find(id).One(&result); err != nil {
 		rest.NotFound(w)
 		return
 	}
@@ -100,8 +102,7 @@ func (mr *MongoRest) Find(w http.ResponseWriter, idString string, r *http.Reques
 func (mr *MongoRest) Create(w http.ResponseWriter, r *http.Request) {
 	dec := json.NewDecoder(r.Body)
         var result map[string]interface{}
-        err := dec.Decode(&result)
-	if err != nil {
+        if err := dec.Decode(&result); err != nil {
 		rest.BadRequest(w, formatting)
 		return
 	}
@@ -124,15 +125,15 @@ func (mr *MongoRest) Update(w http.ResponseWriter, idString string, r *http.Requ
 	dec := json.NewDecoder(r.Body)
         var result map[string]interface{}
         err := dec.Decode(&result)
+
 	if err != nil {
 		rest.BadRequest(w, formatting)
 		return
 	}
 
-	// TODO: validate the Id first
-	id := bson.ObjectIdHex(idString)
+	id := createIdLookup(idString)
 
-	err = mr.col.Update(bson.M{"_id": id}, result)
+	err = mr.col.Update(id, result)
 	if err == mgo.NotFound {
 		rest.NotFound(w)
 		return
@@ -147,20 +148,22 @@ func (mr *MongoRest) Update(w http.ResponseWriter, idString string, r *http.Requ
 
 // Delete a snip identified by ID from the collection
 func (mr *MongoRest) Delete(w http.ResponseWriter, idString string, r *http.Request) {
-	// TODO: validate the Id first
-	id := bson.ObjectIdHex(idString)
-	err := mr.col.Remove(bson.M{"_id": id})
-	if err != nil {
+	id := createIdLookup(idString)
+	err := mr.col.Remove(id)
+	if err == mgo.NotFound {
 		rest.NotFound(w)
+		return
+	} else if err != nil {
+		log.Println(err.String())
+		// TODO: what to do if the doc doesn't update?
 	}
 
 	rest.NoContent(w)
 }
 
-func NewMongoRest(db mgo.Database, resource string, json JsonDecoder) *MongoRest {
+func NewMongoRest(db mgo.Database, resource string) *MongoRest {
 	mr :=  &MongoRest {
 		col: db.C(resource),
-		json: json,
 	}
 
 	rest.Resource(resource, mr)
