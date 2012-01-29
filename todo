@@ -1,7 +1,7 @@
+- add more complex methods
 - implement looking up by dates
 - implement tests
 	tests are out for now, don't know how to mock the database and web server
-- add more complex methods
 
 DONE:
 - implement looking up by numbers
