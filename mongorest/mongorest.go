@@ -35,7 +35,7 @@ func writeHtml(w http.ResponseWriter, items []map[string]interface{}) {
 	}
 }
 
-func createIdLookup(id string)  bson.M {
+func createIdLookup(id string) bson.M {
 	// TODO: add numbers to this
 	reg := sre2.MustParse("^[0-9a-f]{24}$")
 
@@ -52,7 +52,7 @@ type MongoRest struct {
 
 // Get all of the documents in the mongo collection 
 func (mr *MongoRest) Index(w http.ResponseWriter, r *http.Request) {
-	var result []map[string]interface{};
+	var result []map[string]interface{}
 	err := mr.col.Find(nil).Limit(100).All(&result)
 	if err != nil {
 		log.Fatal(err)
@@ -63,15 +63,15 @@ func (mr *MongoRest) Index(w http.ResponseWriter, r *http.Request) {
 		enc := json.NewEncoder(w)
 		w.Header().Set("content-type", "application/json")
 		enc.Encode(&result)
-//	case strings.Contains(accept, "text/html"):
-//		w.Header().Set("content-type", "text/html")
-//		writeHtml(w, result)
+		//	case strings.Contains(accept, "text/html"):
+		//		w.Header().Set("content-type", "text/html")
+		//		writeHtml(w, result)
 	default:
 		w.WriteHeader(http.StatusNotAcceptable)
 	}
 
-//	log.Println(r.Header.Get("content-type"))
-//	log.Println(accept)
+	//	log.Println(r.Header.Get("content-type"))
+	//	log.Println(accept)
 }
 
 // Find a document in the collection, identified by the ID
@@ -88,11 +88,11 @@ func (mr *MongoRest) Find(w http.ResponseWriter, idString string, r *http.Reques
 		enc := json.NewEncoder(w)
 		w.Header().Set("content-type", "application/json")
 		enc.Encode(&result)
-//	case strings.Contains(accept, "text/html"):
-//		w.Header().Set("content-type", "text/html")
-//		for key, value := range result {
-//			fmt.Fprintf(w, "%v: %v<br />", key, value)
-//		}
+		//	case strings.Contains(accept, "text/html"):
+		//		w.Header().Set("content-type", "text/html")
+		//		for key, value := range result {
+		//			fmt.Fprintf(w, "%v: %v<br />", key, value)
+		//		}
 	default:
 		w.WriteHeader(http.StatusNotAcceptable)
 	}
@@ -101,8 +101,8 @@ func (mr *MongoRest) Find(w http.ResponseWriter, idString string, r *http.Reques
 // Create and add a new document to the collection
 func (mr *MongoRest) Create(w http.ResponseWriter, r *http.Request) {
 	dec := json.NewDecoder(r.Body)
-        var result map[string]interface{}
-        if err := dec.Decode(&result); err != nil {
+	var result map[string]interface{}
+	if err := dec.Decode(&result); err != nil {
 		rest.BadRequest(w, formatting)
 		return
 	}
@@ -114,7 +114,7 @@ func (mr *MongoRest) Create(w http.ResponseWriter, r *http.Request) {
 	if err := mr.col.Insert(result); err != nil {
 		rest.BadRequest(w, "Could not insert document")
 		return
-        }
+	}
 
 	output := fmt.Sprintf("%v%v", r.URL.String(), toString(result["_id"]))
 	rest.Created(w, output)
@@ -123,8 +123,8 @@ func (mr *MongoRest) Create(w http.ResponseWriter, r *http.Request) {
 // Update a document identified by an ID with the data sent as request-body
 func (mr *MongoRest) Update(w http.ResponseWriter, idString string, r *http.Request) {
 	dec := json.NewDecoder(r.Body)
-        var result map[string]interface{}
-        err := dec.Decode(&result)
+	var result map[string]interface{}
+	err := dec.Decode(&result)
 
 	if err != nil {
 		rest.BadRequest(w, formatting)
@@ -162,7 +162,7 @@ func (mr *MongoRest) Delete(w http.ResponseWriter, idString string, r *http.Requ
 }
 
 func NewMongoRest(db mgo.Database, resource string) *MongoRest {
-	mr :=  &MongoRest {
+	mr := &MongoRest{
 		col: db.C(resource),
 	}
 
