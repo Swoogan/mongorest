@@ -7,6 +7,7 @@ import (
 	"json"
 	"os"
 	"strings"
+	"strconv"
 	"github.com/Swoogan/rest.go"
 	"launchpad.net/mgo"
 	"launchpad.net/gobson/bson"
@@ -36,11 +37,16 @@ func writeHtml(w http.ResponseWriter, items []map[string]interface{}) {
 }
 
 func createIdLookup(id string) bson.M {
-	// TODO: add numbers to this
-	reg := sre2.MustParse("^[0-9a-f]{24}$")
+	// TODO: add dates to this
+	hex := sre2.MustParse("^[0-9a-f]{24}$")
+	number := sre2.MustParse("^[0-9]+$")
 
-	if reg.Match(id) {
+	if hex.Match(id) {
 		return bson.M{"_id": bson.ObjectIdHex(id)}
+	} else if number.Match(id) {
+		if i, err := strconv.Atoi64(id); err == nil {
+			return bson.M{"_id": i}
+		}
 	}
 
 	return bson.M{"_id": id}
@@ -63,15 +69,15 @@ func (mr *MongoRest) Index(w http.ResponseWriter, r *http.Request) {
 		enc := json.NewEncoder(w)
 		w.Header().Set("content-type", "application/json")
 		enc.Encode(&result)
-		//	case strings.Contains(accept, "text/html"):
-		//		w.Header().Set("content-type", "text/html")
-		//		writeHtml(w, result)
+		//case strings.Contains(accept, "text/html"):
+		//	w.Header().Set("content-type", "text/html")
+		//	writeHtml(w, result)
 	default:
 		w.WriteHeader(http.StatusNotAcceptable)
 	}
 
-	//	log.Println(r.Header.Get("content-type"))
-	//	log.Println(accept)
+	//log.Println(r.Header.Get("content-type"))
+	//log.Println(accept)
 }
 
 // Find a document in the collection, identified by the ID
@@ -88,11 +94,11 @@ func (mr *MongoRest) Find(w http.ResponseWriter, idString string, r *http.Reques
 		enc := json.NewEncoder(w)
 		w.Header().Set("content-type", "application/json")
 		enc.Encode(&result)
-		//	case strings.Contains(accept, "text/html"):
-		//		w.Header().Set("content-type", "text/html")
-		//		for key, value := range result {
-		//			fmt.Fprintf(w, "%v: %v<br />", key, value)
-		//		}
+		//case strings.Contains(accept, "text/html"):
+		//	w.Header().Set("content-type", "text/html")
+		//	for key, value := range result {
+		//		fmt.Fprintf(w, "%v: %v<br />", key, value)
+		//	}
 	default:
 		w.WriteHeader(http.StatusNotAcceptable)
 	}
