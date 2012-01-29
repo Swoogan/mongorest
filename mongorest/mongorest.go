@@ -58,6 +58,9 @@ type MongoRest struct {
 
 // Get all of the documents in the mongo collection 
 func (mr *MongoRest) Index(w http.ResponseWriter, r *http.Request) {
+	//log.Println(r.URL.RawQuery)
+	//wak := r.URL.Query()
+	//log.Println(wak["name"][0])
 	var result []map[string]interface{}
 	err := mr.col.Find(nil).Limit(100).All(&result)
 	if err != nil {
