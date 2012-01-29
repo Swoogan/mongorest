@@ -1,11 +1,12 @@
 package main
 
 import (
-	"fmt"
-	"http"
-	"log"
-	"json"
 	"os"
+	"fmt"
+	"log"
+	"url"
+	"http"
+	"json"
 	"strings"
 	"strconv"
 	"github.com/Swoogan/rest.go"
@@ -56,13 +57,27 @@ type MongoRest struct {
 	col mgo.Collection
 }
 
+func parseQuery(query url.Values) map[string] interface{} {
+	result := make(map[string] interface{})
+	for key, value := range query {
+		if len(value) == 1 {
+			result[key] = value[0]
+		}
+		log.Printf("%v: %v", key, value)
+	}
+	return result
+}
+
 // Get all of the documents in the mongo collection 
 func (mr *MongoRest) Index(w http.ResponseWriter, r *http.Request) {
-	//log.Println(r.URL.RawQuery)
-	//wak := r.URL.Query()
-	//log.Println(wak["name"][0])
-	var result []map[string]interface{}
-	err := mr.col.Find(nil).Limit(100).All(&result)
+	var lookup map[string] interface{}
+	if len(r.URL.RawQuery) > 0 {
+		log.Println(r.URL.RawQuery)
+		lookup = parseQuery(r.URL.Query())
+	}
+
+	var result []map[string] interface{}
+	err := mr.col.Find(lookup).Limit(100).All(&result)
 	if err != nil {
 		log.Fatal(err)
 	}
