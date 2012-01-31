@@ -4,7 +4,7 @@ import (
 	"os"
 	"fmt"
 	"log"
-	"url"
+//	"url"
 	"http"
 	"json"
 	"strings"
@@ -57,23 +57,47 @@ type MongoRest struct {
 	col mgo.Collection
 }
 
-func parseQuery(query url.Values) map[string] interface{} {
+func parseQuery(query map[string][]string) (map[string] interface{}, os.Error) {
+	var err os.Error
 	result := make(map[string] interface{})
-	for key, value := range query {
-		if len(value) == 1 {
-			result[key] = value[0]
+	for key, values := range query {
+		if len(values) == 1 {
+			result[key], err = convertType(values[0])
+			log.Println(result[key])
+		} else if len(values) > 1 {
+			log.Println("Arrays are handled with [a1,a2,...,an] syntax")
 		}
-		log.Printf("%v: %v", key, value)
+		log.Printf("%v: %v", key, values)
 	}
-	return result
+	return result, err
+}
+
+func convertType(value string) (interface{}, os.Error) {
+	if len(value) < 2 {
+		return nil, os.NewError("Query string was not in the correct format")
+	}
+
+	switch {
+	case strings.Index(value, "s:") != -1:
+		return value[2:], nil
+	case strings.Index(value, "i:") != -1:
+		if i, err := strconv.Atoi64(value[2:]); err != nil {
+			return i, nil
+		} else {
+			return nil, err
+		}
+	}
+
+	// default to string
+	return value, nil
 }
 
 // Get all of the documents in the mongo collection 
 func (mr *MongoRest) Index(w http.ResponseWriter, r *http.Request) {
 	var lookup map[string] interface{}
 	if len(r.URL.RawQuery) > 0 {
-		log.Println(r.URL.RawQuery)
-		lookup = parseQuery(r.URL.Query())
+		lookup, _ = parseQuery(r.URL.Query())
+		log.Println(lookup)
 	}
 
 	var result []map[string] interface{}
