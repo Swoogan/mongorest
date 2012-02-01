@@ -60,32 +60,24 @@ type MongoRest struct {
 func parseQuery(query map[string][]string) (map[string] interface{}, os.Error) {
 	var err os.Error
 	result := make(map[string] interface{})
+
 	for key, values := range query {
 		if len(values) == 1 {
 			result[key], err = convertType(values[0])
-			log.Println(result[key])
 		} else if len(values) > 1 {
 			log.Println("Arrays are handled with [a1,a2,...,an] syntax")
 		}
-		log.Printf("%v: %v", key, values)
 	}
+
 	return result, err
 }
 
 func convertType(value string) (interface{}, os.Error) {
-	if len(value) < 2 {
-		return nil, os.NewError("Query string was not in the correct format")
-	}
-
 	switch {
 	case strings.Index(value, "s:") != -1:
 		return value[2:], nil
 	case strings.Index(value, "i:") != -1:
-		if i, err := strconv.Atoi64(value[2:]); err != nil {
-			return i, nil
-		} else {
-			return nil, err
-		}
+		return strconv.Atoi(value[2:])
 	}
 
 	// default to string
@@ -96,8 +88,11 @@ func convertType(value string) (interface{}, os.Error) {
 func (mr *MongoRest) Index(w http.ResponseWriter, r *http.Request) {
 	var lookup map[string] interface{}
 	if len(r.URL.RawQuery) > 0 {
-		lookup, _ = parseQuery(r.URL.Query())
-		log.Println(lookup)
+		var err os.Error
+		if lookup, err = parseQuery(r.URL.Query()); err != nil {
+			rest.BadRequest(w, err.String())
+			return
+		}
 	}
 
 	var result []map[string] interface{}
