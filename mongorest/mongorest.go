@@ -4,7 +4,7 @@ import (
 	"os"
 	"fmt"
 	"log"
-//	"url"
+	//	"url"
 	"http"
 	"json"
 	"strings"
@@ -57,9 +57,9 @@ type MongoRest struct {
 	col mgo.Collection
 }
 
-func parseQuery(query map[string][]string) (map[string] interface{}, os.Error) {
+func parseQuery(query map[string][]string) (map[string]interface{}, os.Error) {
 	var err os.Error
-	result := make(map[string] interface{})
+	result := make(map[string]interface{})
 
 	for key, values := range query {
 		if len(values) == 1 {
@@ -86,7 +86,7 @@ func convertType(value string) (interface{}, os.Error) {
 
 // Get all of the documents in the mongo collection 
 func (mr *MongoRest) Index(w http.ResponseWriter, r *http.Request) {
-	var lookup map[string] interface{}
+	var lookup map[string]interface{}
 	if len(r.URL.RawQuery) > 0 {
 		var err os.Error
 		if lookup, err = parseQuery(r.URL.Query()); err != nil {
@@ -95,7 +95,7 @@ func (mr *MongoRest) Index(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	var result []map[string] interface{}
+	var result []map[string]interface{}
 	err := mr.col.Find(lookup).Limit(100).All(&result)
 	if err != nil {
 		log.Fatal(err)

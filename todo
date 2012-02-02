@@ -1,9 +1,10 @@
-- add arrays and type handling to querying
+- add arrays and more type handling to querying
 - implement looking up by dates
 - implement tests
 	tests are out for now, don't know how to mock the database and web server
 
 DONE:
+- add basic type handling to querying
 - add more complex methods
 	* implemented find with simple querystring
 - implement looking up by numbers
