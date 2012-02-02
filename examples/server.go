@@ -4,7 +4,7 @@ import (
 	"http"
 	"log"
 	"launchpad.net/mgo"
-	"bitbucket.com/Swoogan/mongorest"
+	"bitbucket.org/Swoogan/mongorest"
 )
 
 func main() {
@@ -19,8 +19,8 @@ func main() {
 
 	db := session.DB("test")
 
-	NewMongoRest(db, "customers")
-	NewMongoRest(db, "employees")
+	mongorest.NewMongoRest(db, "customers")
+	mongorest.NewMongoRest(db, "employees")
 
 	log.Printf("About to listen on 8080")
 	err = http.ListenAndServe(":8080", nil)

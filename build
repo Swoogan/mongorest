@@ -6,6 +6,8 @@ if [ "$1" = "goinstall" ]; then
 echo Running goinstall \
 && echo "goinstall launchpad.net/gobson/bson" \
 && goinstall launchpad.net/gobson/bson \
+&& echo "goinstall bitbucket.org/Swoogan/mongorest" \
+&& goinstall bitbucket.org/Swoogan/mongorest \
 && echo "goinstall launchpad.net/mgo" \
 && goinstall launchpad.net/mgo \
 && echo "goinstall github.com/Swoogan/rest.go" \
@@ -15,7 +17,8 @@ echo Running goinstall \
 
 else
 echo Building \
-&& echo "(in mongorest)" gomake $1 && cd mongorest && gomake $1 && cd - > /dev/null \
+&& echo "(in .)" gomake $1 && cd . && gomake $1 && cd - > /dev/null \
+&& echo "(in examples)" gomake $1 && cd examples && gomake $1 && cd - > /dev/null \
 
 fi
 
