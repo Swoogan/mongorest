@@ -3,3 +3,4 @@ bin/mongorest
 mongorest/_linux_amd64_.6
 mongorest/bin/mongorest
 mongorest/mongorest    
+_obj/*
