@@ -1,0 +1,7 @@
+A RESTful HTTP server program and library for exposing MongoDB document collections.
+
+Install by running:
+
+	goinstall bitbucket.com/Swoogan/mongorest
+
+See server.go as an example implementation.
