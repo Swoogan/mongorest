@@ -1,10 +1,12 @@
+/*
+A Go (golang) RESTful HTTP server library for exposing MongoDB document collections.
+*/
 package mongorest
 
 import (
 	"os"
 	"fmt"
 	"log"
-	//	"url"
 	"http"
 	"json"
 	"strings"
@@ -53,10 +55,6 @@ func createIdLookup(id string) bson.M {
 	return bson.M{"_id": id}
 }
 
-type MongoRest struct {
-	col mgo.Collection
-}
-
 func parseQuery(query map[string][]string) (map[string]interface{}, os.Error) {
 	var err os.Error
 	result := make(map[string]interface{})
@@ -82,6 +80,10 @@ func convertType(value string) (interface{}, os.Error) {
 
 	// default to string
 	return value, nil
+}
+
+type MongoRest struct {
+	col mgo.Collection
 }
 
 // Get all of the documents in the mongo collection 
@@ -204,7 +206,7 @@ func (mr *MongoRest) Delete(w http.ResponseWriter, idString string, r *http.Requ
 	rest.NoContent(w)
 }
 
-func NewMongoRest(db mgo.Database, resource string) *MongoRest {
+func New(db mgo.Database, resource string) *MongoRest {
 	mr := &MongoRest{
 		col: db.C(resource),
 	}
@@ -214,15 +216,3 @@ func NewMongoRest(db mgo.Database, resource string) *MongoRest {
 	return mr
 }
 
-type Document interface {
-	getId() string
-	newId()
-}
-
-type JsonDecoder interface {
-	DecodeJson(d *json.Decoder) (Document, os.Error)
-}
-
-type XmlDecoder interface {
-	DecodeXml() (Document, os.Error)
-}
