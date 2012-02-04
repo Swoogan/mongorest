@@ -19,8 +19,8 @@ func main() {
 
 	db := session.DB("test")
 
-	mongorest.NewMongoRest(db, "customers")
-	mongorest.NewMongoRest(db, "employees")
+	mongorest.New(db, "customers")
+	mongorest.New(db, "employees")
 
 	log.Printf("About to listen on 8080")
 	err = http.ListenAndServe(":8080", nil)

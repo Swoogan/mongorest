@@ -1,3 +1,4 @@
+- add content-type handling for posts and puts
 - add arrays and more type handling to querying
 - implement looking up by dates
 - implement tests
