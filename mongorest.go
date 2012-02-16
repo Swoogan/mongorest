@@ -84,7 +84,7 @@ func (mr *MongoRest) Find(w http.ResponseWriter, idString string, r *http.Reques
 
 // Create and add a new document to the collection
 func (mr *MongoRest) Create(w http.ResponseWriter, r *http.Request) {
-	ctype := r.Header.Get("content-type");
+	ctype := r.Header.Get("content-type")
 	dec := json.NewDecoder(r.Body)
 	var result map[string]interface{}
 	if err := dec.Decode(&result); err != nil {
@@ -107,7 +107,7 @@ func (mr *MongoRest) Create(w http.ResponseWriter, r *http.Request) {
 
 // Update a document identified by an ID with the data sent as request-body
 func (mr *MongoRest) Update(w http.ResponseWriter, idString string, r *http.Request) {
-	ctype := r.Header.Get("content-type");
+	ctype := r.Header.Get("content-type")
 	dec := json.NewDecoder(r.Body)
 	var result map[string]interface{}
 	err := dec.Decode(&result)
@@ -138,7 +138,7 @@ func (mr *MongoRest) Delete(w http.ResponseWriter, idString string, r *http.Requ
 	err := mr.col.Remove(id)
 	if err == mgo.NotFound {
 		// rest.NotFound(w)	// Deleting twice isn't supposed to be an error
-		w.WriteHeader(http.StatusAccepted)	// If it's delete, but we don't do anything, just accept it
+		w.WriteHeader(http.StatusAccepted) // If it's delete, but we don't do anything, just accept it
 		return
 	} else if err != nil {
 		log.Println(err.String())
@@ -149,8 +149,7 @@ func (mr *MongoRest) Delete(w http.ResponseWriter, idString string, r *http.Requ
 }
 
 func New(db mgo.Database, resource string) *MongoRest {
-	mr := &MongoRest{ db.C(resource) }
+	mr := &MongoRest{db.C(resource)}
 	rest.Resource(resource, mr)
 	return mr
 }
-

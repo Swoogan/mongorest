@@ -73,4 +73,3 @@ func convertType(value string) (interface{}, os.Error) {
 	// default to string
 	return value, nil
 }
-
