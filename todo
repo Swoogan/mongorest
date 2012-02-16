@@ -1,12 +1,12 @@
 - switch the querystrings to use json so filtering and sorting can be added
-- apparently PUT should be an upsert not an insert (believe PUT should also fully replace the document, not just partially updated it -- verify)
-- add content-type handling for posts and puts
 - add arrays and more type handling to querying
 - implement looking up by dates
 - implement tests
 	tests are out for now, don't know how to mock the database and web server
 
 DONE:
+- add content-type handling for posts and puts
+- apparently PUT should be an upsert not an insert (believe PUT should also fully replace the document, not just partially updated it -- verify)
 - add basic type handling to querying
 - add more complex methods
 	* implemented find with simple querystring

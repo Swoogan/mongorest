@@ -49,9 +49,6 @@ func (mr *MongoRest) Index(w http.ResponseWriter, r *http.Request) {
 	default:
 		w.WriteHeader(http.StatusNotAcceptable)
 	}
-
-	//log.Println(r.Header.Get("content-type"))
-	//log.Println(accept)
 }
 
 // Find a document in the collection, identified by the ID
@@ -116,26 +113,27 @@ func (mr *MongoRest) Update(w http.ResponseWriter, idString string, r *http.Requ
 
 	dec := json.NewDecoder(r.Body)
 	var result map[string]interface{}
-	err := dec.Decode(&result)
 
-	if err != nil {
+	if err := dec.Decode(&result); err != nil {
 		rest.BadRequest(w, formatting)
 		return
 	}
 
 	id := createIdLookup(idString)
 
-	err = mr.col.Update(id, result)
-	if err == mgo.NotFound {
-		rest.NotFound(w)
-		return
-	} else if err != nil {
-		log.Println(err.String())
-		// TODO: what to do if the doc doesn't update?
+	newid, err := mr.col.Upsert(id, result)
+	if err != nil {
+		log.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+	} else if newid != nil {
+		if id, ok := newid.(bson.ObjectId); ok {
+			rest.Created(w, id.Hex())
+		} else {
+			rest.NoContent(w)
+		}
+	} else {
+		rest.NoContent(w)
 	}
-
-	// Respond to indicate successful update
-	rest.Updated(w, r.URL.String())
 }
 
 // Delete a snip identified by ID from the collection
@@ -145,13 +143,12 @@ func (mr *MongoRest) Delete(w http.ResponseWriter, idString string, r *http.Requ
 	if err == mgo.NotFound {
 		// rest.NotFound(w)	// Deleting twice isn't supposed to be an error
 		w.WriteHeader(http.StatusAccepted) // If it's delete, but we don't do anything, just accept it
-		return
 	} else if err != nil {
-		log.Println(err.String())
+		log.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
+	} else {
+		rest.NoContent(w)
 	}
-
-	rest.NoContent(w)
 }
 
 func New(db mgo.Database, resource string) *MongoRest {
