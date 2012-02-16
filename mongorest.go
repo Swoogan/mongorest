@@ -38,6 +38,10 @@ func (mr *MongoRest) Index(w http.ResponseWriter, r *http.Request) {
 		log.Fatal(err)
 	}
 
+	mediatype, params := mime.ParseMediaType(r.Header.Get("accept"))
+	log.Println(mediatype)
+	log.Println(params)
+
 	switch accept := r.Header.Get("accept"); {
 	case strings.Contains(accept, "application/json"):
 		enc := json.NewEncoder(w)
@@ -80,6 +84,7 @@ func (mr *MongoRest) Find(w http.ResponseWriter, idString string, r *http.Reques
 
 // Create and add a new document to the collection
 func (mr *MongoRest) Create(w http.ResponseWriter, r *http.Request) {
+	ctype := r.Header.Get("content-type");
 	dec := json.NewDecoder(r.Body)
 	var result map[string]interface{}
 	if err := dec.Decode(&result); err != nil {
@@ -102,6 +107,7 @@ func (mr *MongoRest) Create(w http.ResponseWriter, r *http.Request) {
 
 // Update a document identified by an ID with the data sent as request-body
 func (mr *MongoRest) Update(w http.ResponseWriter, idString string, r *http.Request) {
+	ctype := r.Header.Get("content-type");
 	dec := json.NewDecoder(r.Body)
 	var result map[string]interface{}
 	err := dec.Decode(&result)
@@ -131,23 +137,20 @@ func (mr *MongoRest) Delete(w http.ResponseWriter, idString string, r *http.Requ
 	id := createIdLookup(idString)
 	err := mr.col.Remove(id)
 	if err == mgo.NotFound {
-		rest.NotFound(w)
+		// rest.NotFound(w)	// Deleting twice isn't supposed to be an error
+		w.WriteHeader(http.StatusAccepted)	// If it's delete, but we don't do anything, just accept it
 		return
 	} else if err != nil {
 		log.Println(err.String())
-		// TODO: what to do if the doc doesn't update?
+		w.WriteHeader(http.StatusInternalServerError)
 	}
 
 	rest.NoContent(w)
 }
 
 func New(db mgo.Database, resource string) *MongoRest {
-	mr := &MongoRest{
-		col: db.C(resource),
-	}
-
+	mr := &MongoRest{ db.C(resource) }
 	rest.Resource(resource, mr)
-
 	return mr
 }
 
