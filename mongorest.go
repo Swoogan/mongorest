@@ -33,14 +33,10 @@ func (mr *MongoRest) Index(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var result []map[string]interface{}
-	err := mr.col.Find(lookup).Limit(100).All(&result)
+	err := mr.col.Find(lookup).All(&result)
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	mediatype, params := mime.ParseMediaType(r.Header.Get("accept"))
-	log.Println(mediatype)
-	log.Println(params)
 
 	switch accept := r.Header.Get("accept"); {
 	case strings.Contains(accept, "application/json"):
@@ -85,6 +81,11 @@ func (mr *MongoRest) Find(w http.ResponseWriter, idString string, r *http.Reques
 // Create and add a new document to the collection
 func (mr *MongoRest) Create(w http.ResponseWriter, r *http.Request) {
 	ctype := r.Header.Get("content-type")
+	if ctype != "application/json" {
+		rest.NotImplemented(w)
+		return
+	}
+
 	dec := json.NewDecoder(r.Body)
 	var result map[string]interface{}
 	if err := dec.Decode(&result); err != nil {
@@ -108,6 +109,11 @@ func (mr *MongoRest) Create(w http.ResponseWriter, r *http.Request) {
 // Update a document identified by an ID with the data sent as request-body
 func (mr *MongoRest) Update(w http.ResponseWriter, idString string, r *http.Request) {
 	ctype := r.Header.Get("content-type")
+	if ctype != "application/json" {
+		rest.NotImplemented(w)
+		return
+	}
+
 	dec := json.NewDecoder(r.Body)
 	var result map[string]interface{}
 	err := dec.Decode(&result)
