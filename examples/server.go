@@ -5,7 +5,8 @@ import (
 	"http"
 	"flag"
 	"launchpad.net/mgo"
-	"bitbucket.org/Swoogan/mongorest"
+//	"bitbucket.org/Swoogan/mongorest"
+	"mongorest"
 )
 
 func main() {
