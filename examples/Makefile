@@ -8,7 +8,7 @@ GOFILES=\
 	server.go\
 
 # gb: this is the local install
-GBROOT=.
+GBROOT=..
 
 # gb: compile/link against local install
 GCIMPORTS+= -I $(GBROOT)/_obj
