@@ -5,6 +5,7 @@ include $(GOROOT)/src/Make.inc
 
 TARG=mongorest
 GOFILES=\
+	helpers.go\
 	mongorest.go\
 
 # gb: this is the local install
