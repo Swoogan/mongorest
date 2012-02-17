@@ -18,6 +18,7 @@ var formatting = "Valid JSON is required\n"
 
 type MongoRest struct {
 	col mgo.Collection
+	log *log.Logger
 }
 
 // Get all of the documents in the mongo collection 
@@ -26,6 +27,7 @@ func (mr *MongoRest) Index(w http.ResponseWriter, r *http.Request) {
 	if len(r.URL.RawQuery) > 0 {
 		var err os.Error
 		if lookup, err = parseQuery(r.URL.Query()); err != nil {
+			mr.log.Println(err)
 			rest.BadRequest(w, err.String())
 			return
 		}
@@ -34,7 +36,7 @@ func (mr *MongoRest) Index(w http.ResponseWriter, r *http.Request) {
 	var result []map[string]interface{}
 	err := mr.col.Find(lookup).All(&result)
 	if err != nil {
-		log.Println(err)
+		mr.log.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -58,6 +60,7 @@ func (mr *MongoRest) Find(w http.ResponseWriter, idString string, r *http.Reques
 	var result map[string]interface{}
 	id := createIdLookup(idString)
 	if err := mr.col.Find(id).One(&result); err != nil {
+		mr.log.Println(err)
 		rest.NotFound(w)
 		return
 	}
@@ -83,6 +86,7 @@ func (mr *MongoRest) Find(w http.ResponseWriter, idString string, r *http.Reques
 func (mr *MongoRest) Create(w http.ResponseWriter, r *http.Request) {
 	ctype := r.Header.Get("content-type")
 	if ctype != "application/json" {
+		mr.log.Println("Content type not implemented:", ctype)
 		rest.NotImplemented(w)
 		return
 	}
@@ -90,6 +94,7 @@ func (mr *MongoRest) Create(w http.ResponseWriter, r *http.Request) {
 	dec := json.NewDecoder(r.Body)
 	var result map[string]interface{}
 	if err := dec.Decode(&result); err != nil {
+		mr.log.Println(err)
 		//TODO: should this be a 406 or 415?
 		rest.BadRequest(w, formatting)
 		return
@@ -99,7 +104,7 @@ func (mr *MongoRest) Create(w http.ResponseWriter, r *http.Request) {
 	if result["_id"] == nil {
 		result["_id"] = bson.NewObjectId()
 		if err := mr.col.Insert(result); err != nil {
-			log.Println(err)
+			mr.log.Println(err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -112,7 +117,7 @@ func (mr *MongoRest) Create(w http.ResponseWriter, r *http.Request) {
 	selector := bson.M{"_id": result["_id"]}
 	if err := mr.col.Find(selector).One(&result); err != nil {
 		if err2 := mr.col.Insert(result); err2 != nil {
-			log.Println(err2)
+			mr.log.Println(err2)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -124,7 +129,7 @@ func (mr *MongoRest) Create(w http.ResponseWriter, r *http.Request) {
 	result["_id"] = nil, false
 	change := bson.M{"$set": result}
 	if err := mr.col.Update(selector, change); err != nil {
-		log.Println(err)
+		mr.log.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -145,7 +150,7 @@ func (mr *MongoRest) Create(w http.ResponseWriter, r *http.Request) {
 
 		switch {
 		case err != nil:
-			log.Println(err)
+			mr.log.Println(err)
 			w.WriteHeader(http.StatusInternalServerError)
 		case id != nil:
 			output := fmt.Sprintf("%v%v", r.URL.String(), id)
@@ -160,6 +165,7 @@ func (mr *MongoRest) Create(w http.ResponseWriter, r *http.Request) {
 func (mr *MongoRest) Update(w http.ResponseWriter, idString string, r *http.Request) {
 	ctype := r.Header.Get("content-type")
 	if ctype != "application/json" {
+		mr.log.Println("Content type not implemented:", ctype)
 		rest.NotImplemented(w)
 		return
 	}
@@ -168,6 +174,7 @@ func (mr *MongoRest) Update(w http.ResponseWriter, idString string, r *http.Requ
 	var result map[string]interface{}
 
 	if err := dec.Decode(&result); err != nil {
+		mr.log.Println(err)
 		rest.BadRequest(w, formatting)
 		return
 	}
@@ -179,7 +186,7 @@ func (mr *MongoRest) Update(w http.ResponseWriter, idString string, r *http.Requ
 	newid, err := mr.col.Upsert(id, result)
 	switch {
 	case err != nil:
-		log.Println(err)
+		mr.log.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
 	case newid != nil:
 		rest.Created(w, r.URL.String())
@@ -196,15 +203,15 @@ func (mr *MongoRest) Delete(w http.ResponseWriter, idString string, r *http.Requ
 		// rest.NotFound(w)	// Deleting twice isn't supposed to be an error
 		w.WriteHeader(http.StatusAccepted) // If it's delete, but we don't do anything, just accept it
 	} else if err != nil {
-		log.Println(err)
+		mr.log.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
 	} else {
 		rest.NoContent(w)
 	}
 }
 
-func New(db mgo.Database, resource string) *MongoRest {
-	mr := &MongoRest{db.C(resource)}
+func New(db mgo.Database, resource string, l *log.Logger) *MongoRest {
+	mr := &MongoRest{db.C(resource), l}
 	rest.Resource(resource, mr)
 	return mr
 }
