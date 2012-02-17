@@ -3,7 +3,6 @@ package main
 import (
 	"os"
 	"log"
-	"fmt"
 	"http"
 	"flag"
 	"syscall"
@@ -13,40 +12,58 @@ import (
 	//"mongorest"
 )
 
+var mongo *string = flag.String("m", "localhost", "Mongodb address")
+var dbname *string = flag.String("d", "test", "Mongodb database name")
+var address *string = flag.String("a", ":8080", "Address to listen on")
+var logfile *string = flag.String("o", "", "File to log to")
+
 func main() {
-	var mongo *string = flag.String("m", "localhost", "Mongodb address")
-	var dbname *string = flag.String("d", "test", "Mongodb database name")
-	var address *string = flag.String("a", ":8080", "Address to listen on")
 	flag.Parse()
 
-	log.Printf("Connecting to mongodb at %v", *mongo)
+	output := os.Stderr
+	if *logfile != "" {
+		var err os.Error
+		output, err = os.OpenFile(*logfile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+	logger := log.New(output, "", log.LstdFlags)
 
+	if flag.NArg() == 0 {
+		logger.Println("No resources specified, quiting...")
+		return
+	}
+
+	logger.Printf("Connecting to mongodb at %v", *mongo)
 	session, err := mgo.Mongo(*mongo)
 	if err != nil {
-		log.Fatal(err)
+		logger.Fatal(err)
 	}
 	defer session.Close()
 
-	log.Printf("Opening database %v", *dbname)
+	logger.Printf("Opening database %v", *dbname)
 	db := session.DB(*dbname)
 
-	mongorest.New(db, "customers")
-	mongorest.New(db, "employees")
+	for _, resource := range flag.Args() {
+		mongorest.New(db, resource, logger)
+		logger.Println("Setting up resource:", resource)
+	}
 
-	log.Printf("About to listen on %v", *address)
+	logger.Printf("About to listen on %v", *address)
 	go func() {
 		err = http.ListenAndServe(*address, nil)
 		if err != nil {
-			log.Fatal(err)
+			logger.Fatal(err)
 		}
 	}()
 
 	select {
 	case sig := <-signal.Incoming:
-		fmt.Println("***Caught", sig)
+		logger.Println("***Caught", sig)
 		switch sig.(os.UnixSignal) {
 		case syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGINT:
-			log.Println("Shutting down...")
+			logger.Println("Shutting down...")
 			return
 		}
 	}
