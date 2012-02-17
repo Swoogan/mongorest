@@ -9,7 +9,6 @@ import (
 	"log"
 	"http"
 	"json"
-	"strings"
 	"github.com/Swoogan/rest.go"
 	"launchpad.net/mgo"
 	"launchpad.net/gobson/bson"
@@ -40,14 +39,15 @@ func (mr *MongoRest) Index(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	switch accept := r.Header.Get("accept"); {
-	case strings.Contains(accept, "application/json"):
+	ctype := contentType(r.Header.Get("accept"))
+	switch ctype {
+	case "application/json":
 		enc := json.NewEncoder(w)
-		w.Header().Set("content-type", "application/json")
+		w.Header().Set("content-type", ctype)
 		enc.Encode(&result)
-		//case strings.Contains(accept, "text/html"):
-		//	w.Header().Set("content-type", "text/html")
-		//	writeHtml(w, result)
+	case "text/html":
+		w.Header().Set("content-type", ctype)
+		writeHtml(w, result)
 	default:
 		w.WriteHeader(http.StatusNotAcceptable)
 	}
