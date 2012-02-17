@@ -14,11 +14,18 @@ import (
 	"launchpad.net/gobson/bson"
 )
 
+const (
+	readWrite = iota
+	readOnly
+	writeOnly
+)
+
 var formatting = "Valid JSON is required\n"
 
 type MongoRest struct {
 	col mgo.Collection
 	log *log.Logger
+	mode int
 }
 
 // Get all of the documents in the mongo collection 
@@ -210,8 +217,17 @@ func (mr *MongoRest) Delete(w http.ResponseWriter, idString string, r *http.Requ
 	}
 }
 
-func New(db mgo.Database, resource string, l *log.Logger) *MongoRest {
-	mr := &MongoRest{db.C(resource), l}
+func ReadOnly(db mgo.Database, resource string, l *log.Logger) {
+	mr := &MongoRest{db.C(resource), l, readOnly}
 	rest.Resource(resource, mr)
-	return mr
+}
+
+func WriteOnly(db mgo.Database, resource string, l *log.Logger) {
+	mr := &MongoRest{db.C(resource), l, writeOnly}
+	rest.Resource(resource, mr)
+}
+
+func ReadWrite(db mgo.Database, resource string, l *log.Logger) {
+	mr := &MongoRest{db.C(resource), l, readWrite}
+	rest.Resource(resource, mr)
 }
