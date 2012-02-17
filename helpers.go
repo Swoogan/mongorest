@@ -73,3 +73,55 @@ func convertType(value string) (interface{}, os.Error) {
 	// default to string
 	return value, nil
 }
+
+/*
+type mediaType struct {
+	mtype string
+	subtype string
+}
+*/
+
+func parseAccept(accept string) []string {
+	types := strings.Split(accept, ",")
+	result := make([]string, 0)
+	for _, atype := range types {
+		typequal := strings.Split(atype, ";")
+		clean := strings.TrimSpace(typequal[0])
+		if !contains(result, clean) {
+			result = append(result, clean)
+		}
+		//result[i] = strings.Split(typequal[0], "/")
+	}
+	return result
+}
+
+func contains(haystack []string, needle string) bool {
+	for _, val := range haystack {
+		if val == needle {
+			return true
+		}
+	}
+	return false
+}
+
+func contentType(accept string) string {
+	var media string
+	if accept == "" {
+		media = "application/json"
+	} else {
+		types := parseAccept(accept)
+		switch {
+		case contains(types, "application/json"):
+			media = "application/json"
+		case contains(types, "text/html"):
+			media = "text/html"
+		case contains(types, "application/*"):
+			media = "application/json"
+		case contains(types, "text/*"):
+			media = "text/html"
+		case contains(types, "*/*"):
+			media = "application/json"
+		}
+	}
+	return media
+}

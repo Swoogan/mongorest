@@ -62,16 +62,18 @@ func (mr *MongoRest) Find(w http.ResponseWriter, idString string, r *http.Reques
 		return
 	}
 
-	switch accept := r.Header.Get("accept"); {
-	case strings.Contains(accept, "application/json"):
+	ctype := contentType(r.Header.Get("accept"))
+	switch ctype {
+	case "application/json":
 		enc := json.NewEncoder(w)
-		w.Header().Set("content-type", "application/json")
+		w.Header().Set("content-type", ctype)
 		enc.Encode(&result)
-		//case strings.Contains(accept, "text/html"):
-		//	w.Header().Set("content-type", "text/html")
-		//	for key, value := range result {
-		//		fmt.Fprintf(w, "%v: %v<br />", key, value)
-		//	}
+	case "text/html":
+		w.Header().Set("content-type", ctype)
+		//TODO: Implement templating here
+		for key, value := range result {
+			fmt.Fprintf(w, "%v: %v<br />", key, value)
+		}
 	default:
 		w.WriteHeader(http.StatusNotAcceptable)
 	}
