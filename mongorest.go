@@ -15,7 +15,7 @@ import (
 	"launchpad.net/gobson/bson"
 )
 
-var formatting = "Valid JSON is required"
+var formatting = "Valid JSON is required\n"
 
 type MongoRest struct {
 	col mgo.Collection
@@ -35,7 +35,9 @@ func (mr *MongoRest) Index(w http.ResponseWriter, r *http.Request) {
 	var result []map[string]interface{}
 	err := mr.col.Find(lookup).All(&result)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 
 	switch accept := r.Header.Get("accept"); {
@@ -86,23 +88,70 @@ func (mr *MongoRest) Create(w http.ResponseWriter, r *http.Request) {
 	dec := json.NewDecoder(r.Body)
 	var result map[string]interface{}
 	if err := dec.Decode(&result); err != nil {
+		//TODO: should this be a 406 or 415?
 		rest.BadRequest(w, formatting)
 		return
 	}
 
+	// Do insert
 	if result["_id"] == nil {
 		result["_id"] = bson.NewObjectId()
+		if err := mr.col.Insert(result); err != nil {
+			log.Println(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		output := fmt.Sprintf("%v%v", r.URL.String(), result["_id"])
+		rest.Created(w, output)
+		return
 	}
 
-	// Not quite sure what to do with POST of existing document
-	if err := mr.col.Insert(result); err != nil {
+	// Do upsert
+	selector := bson.M{"_id": result["_id"]}
+	if err := mr.col.Find(selector).One(&result); err != nil {
+		if err2 := mr.col.Insert(result); err2 != nil {
+			log.Println(err2)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		output := fmt.Sprintf("%v%v", r.URL.String(), result["_id"])
+		rest.Created(w, output)
+		return
+	}
+
+	result["_id"] = nil, false
+	change := bson.M{"$set": result}
+	if err := mr.col.Update(selector, change); err != nil {
 		log.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+	w.WriteHeader(http.StatusOK)
+/*
+	var selector bson.M
+	var change bson.M
 
-	output := fmt.Sprintf("%v%v", r.URL.String(), toString(result["_id"]))
-	rest.Created(w, output)
+	if result["_id"] == nil {
+		change = result
+	} else {
+		selector = bson.M{"_id": result["_id"]}
+		//result["_id"] = nil, false  // workaround for bug in mgo
+		change = bson.M{"$set": result}
+	}
+
+	id, err := mr.col.Upsert(selector, change)
+
+	switch {
+	case err != nil:
+		log.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+	case id != nil:
+		output := fmt.Sprintf("%v%v", r.URL.String(), id)
+		rest.Created(w, output)
+	default:
+		w.WriteHeader(http.StatusOK)
+	}
+*/
 }
 
 // Update a document identified by an ID with the data sent as request-body
@@ -122,6 +171,7 @@ func (mr *MongoRest) Update(w http.ResponseWriter, idString string, r *http.Requ
 	}
 
 	id := createIdLookup(idString)
+	result["_id"] = id["_id"]
 
 	// bug in mgo Upsert will fail if id is in 'result'
 	newid, err := mr.col.Upsert(id, result)
@@ -130,13 +180,7 @@ func (mr *MongoRest) Update(w http.ResponseWriter, idString string, r *http.Requ
 		log.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
 	case newid != nil:
-		if id, ok := newid.(bson.ObjectId); ok {
-			output := fmt.Sprintf("%v%v", r.URL.String(), id)
-			rest.Created(w, output)
-		} else {
-			log.Println("Could not convert new id to bson.ObjectId")
-			w.WriteHeader(http.StatusInternalServerError)
-		}
+		rest.Created(w, r.URL.String())
 	default:
 		rest.NoContent(w)
 	}

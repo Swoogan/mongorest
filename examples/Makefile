@@ -31,3 +31,7 @@ include $(GOROOT)/src/Make.cmd
 $(GBROOT)/bin/$(TARG): $(TARG)
 	mkdir -p $(dir $@); cp -f $< $@
 command: $(GBROOT)/bin/$(TARG)
+
+# gb: local dependencies
+$(TARG): $(GBROOT)/_obj/mongorest.a
+
