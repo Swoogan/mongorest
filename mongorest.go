@@ -94,8 +94,10 @@ func (mr *MongoRest) Create(w http.ResponseWriter, r *http.Request) {
 		result["_id"] = bson.NewObjectId()
 	}
 
+	// Not quite sure what to do with POST of existing document
 	if err := mr.col.Insert(result); err != nil {
-		rest.BadRequest(w, "Could not insert document")
+		log.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
@@ -121,22 +123,26 @@ func (mr *MongoRest) Update(w http.ResponseWriter, idString string, r *http.Requ
 
 	id := createIdLookup(idString)
 
+	// bug in mgo Upsert will fail if id is in 'result'
 	newid, err := mr.col.Upsert(id, result)
-	if err != nil {
+	switch {
+	case err != nil:
 		log.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
-	} else if newid != nil {
+	case newid != nil:
 		if id, ok := newid.(bson.ObjectId); ok {
-			rest.Created(w, id.Hex())
+			output := fmt.Sprintf("%v%v", r.URL.String(), id)
+			rest.Created(w, output)
 		} else {
-			rest.NoContent(w)
+			log.Println("Could not convert new id to bson.ObjectId")
+			w.WriteHeader(http.StatusInternalServerError)
 		}
-	} else {
+	default:
 		rest.NoContent(w)
 	}
 }
 
-// Delete a snip identified by ID from the collection
+// Delete a document identified by ID from the collection
 func (mr *MongoRest) Delete(w http.ResponseWriter, idString string, r *http.Request) {
 	id := createIdLookup(idString)
 	err := mr.col.Remove(id)
