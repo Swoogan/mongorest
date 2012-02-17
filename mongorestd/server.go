@@ -9,7 +9,6 @@ import (
 	"os/signal"
 	"launchpad.net/mgo"
 	"bitbucket.org/Swoogan/mongorest"
-	//"mongorest"
 )
 
 var mongo *string = flag.String("m", "localhost", "Mongodb address")
@@ -46,7 +45,7 @@ func main() {
 	db := session.DB(*dbname)
 
 	for _, resource := range flag.Args() {
-		mongorest.New(db, resource, logger)
+		mongorest.ReadWrite(db, resource, logger)
 		logger.Println("Setting up resource:", resource)
 	}
 
