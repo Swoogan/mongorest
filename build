@@ -16,7 +16,8 @@ echo Running goinstall \
 else
 echo Building \
 && echo "(in .)" gomake $1 && cd . && gomake $1 && cd - > /dev/null \
-&& echo "(in examples)" gomake $1 && cd examples && gomake $1 && cd - > /dev/null \
+&& echo "(in example)" gomake $1 && cd example && gomake $1 && cd - > /dev/null \
+&& echo "(in mongorestd)" gomake $1 && cd mongorestd && gomake $1 && cd - > /dev/null \
 
 fi
 

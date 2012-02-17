@@ -127,31 +127,31 @@ func (mr *MongoRest) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusOK)
-/*
-	var selector bson.M
-	var change bson.M
+	/*
+		var selector bson.M
+		var change bson.M
 
-	if result["_id"] == nil {
-		change = result
-	} else {
-		selector = bson.M{"_id": result["_id"]}
-		//result["_id"] = nil, false  // workaround for bug in mgo
-		change = bson.M{"$set": result}
-	}
+		if result["_id"] == nil {
+			change = result
+		} else {
+			selector = bson.M{"_id": result["_id"]}
+			//result["_id"] = nil, false  // workaround for bug in mgo
+			change = bson.M{"$set": result}
+		}
 
-	id, err := mr.col.Upsert(selector, change)
+		id, err := mr.col.Upsert(selector, change)
 
-	switch {
-	case err != nil:
-		log.Println(err)
-		w.WriteHeader(http.StatusInternalServerError)
-	case id != nil:
-		output := fmt.Sprintf("%v%v", r.URL.String(), id)
-		rest.Created(w, output)
-	default:
-		w.WriteHeader(http.StatusOK)
-	}
-*/
+		switch {
+		case err != nil:
+			log.Println(err)
+			w.WriteHeader(http.StatusInternalServerError)
+		case id != nil:
+			output := fmt.Sprintf("%v%v", r.URL.String(), id)
+			rest.Created(w, output)
+		default:
+			w.WriteHeader(http.StatusOK)
+		}
+	*/
 }
 
 // Update a document identified by an ID with the data sent as request-body
