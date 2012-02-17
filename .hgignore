@@ -1,10 +1,9 @@
 bin/*
 .*swp
 mongorest/_linux_amd64_.6
-mongorest/bin/mongorest
 mongorest/mongorest    
 _obj/*
-examples/bin/examples
 _go_.6
-examples/_go_.6
-examples/examples
+example/_go_.6
+example/example
+mongorestd/mongorestd

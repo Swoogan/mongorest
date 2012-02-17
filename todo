@@ -1,4 +1,3 @@
-- content negotiation for Index
 - implement delete all
 - makes sure the id in matches id out on put
 - switch the querystrings to use json so filtering and sorting can be added
@@ -9,6 +8,7 @@
 	tests are out for now, don't know how to mock the database and web server
 
 DONE:
+- content negotiation for Index
 - content negotiation for Find
 - make test script
 - add content-type handling for posts and puts

@@ -28,6 +28,7 @@ func writeHtml(w http.ResponseWriter, items []map[string]interface{}) {
 		for key, value := range item {
 			fmt.Fprintf(w, "%v: %v<br />", key, value)
 		}
+		fmt.Fprint(w, "<br />")
 	}
 }
 
