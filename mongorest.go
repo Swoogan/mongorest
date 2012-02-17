@@ -30,6 +30,12 @@ type MongoRest struct {
 
 // Get all of the documents in the mongo collection 
 func (mr *MongoRest) Index(w http.ResponseWriter, r *http.Request) {
+	if mr.mode == writeOnly {
+		mr.log.Println("Attempt to read from write only resource")
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
 	var lookup map[string]interface{}
 	if len(r.URL.RawQuery) > 0 {
 		var err os.Error
@@ -64,6 +70,12 @@ func (mr *MongoRest) Index(w http.ResponseWriter, r *http.Request) {
 
 // Find a document in the collection, identified by the ID
 func (mr *MongoRest) Find(w http.ResponseWriter, idString string, r *http.Request) {
+	if mr.mode == writeOnly {
+		mr.log.Println("Attempt to read from write only resource")
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
 	var result map[string]interface{}
 	id := createIdLookup(idString)
 	if err := mr.col.Find(id).One(&result); err != nil {
@@ -91,6 +103,12 @@ func (mr *MongoRest) Find(w http.ResponseWriter, idString string, r *http.Reques
 
 // Create and add a new document to the collection
 func (mr *MongoRest) Create(w http.ResponseWriter, r *http.Request) {
+	if mr.mode == readOnly {
+		mr.log.Println("Attempt to write to read only resource")
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
 	ctype := r.Header.Get("content-type")
 	if ctype != "application/json" {
 		mr.log.Println("Content type not implemented:", ctype)
@@ -170,6 +188,12 @@ func (mr *MongoRest) Create(w http.ResponseWriter, r *http.Request) {
 
 // Update a document identified by an ID with the data sent as request-body
 func (mr *MongoRest) Update(w http.ResponseWriter, idString string, r *http.Request) {
+	if mr.mode == readOnly {
+		mr.log.Println("Attempt to write to read only resource")
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
 	ctype := r.Header.Get("content-type")
 	if ctype != "application/json" {
 		mr.log.Println("Content type not implemented:", ctype)
@@ -204,6 +228,12 @@ func (mr *MongoRest) Update(w http.ResponseWriter, idString string, r *http.Requ
 
 // Delete a document identified by ID from the collection
 func (mr *MongoRest) Delete(w http.ResponseWriter, idString string, r *http.Request) {
+	if mr.mode == readOnly {
+		mr.log.Println("Attempt to delete a read only resource")
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
 	id := createIdLookup(idString)
 	err := mr.col.Remove(id)
 	if err == mgo.NotFound {
