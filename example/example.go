@@ -10,10 +10,11 @@ import (
 	"mongorest"
 )
 
+var mongo *string = flag.String("m", "localhost", "Mongodb address")
+var dbname *string = flag.String("d", "test", "Mongodb database name")
+var address *string = flag.String("a", ":8080", "Address to listen on")
+
 func main() {
-	var mongo *string = flag.String("m", "localhost", "Mongodb address")
-	var dbname *string = flag.String("d", "test", "Mongodb database name")
-	var address *string = flag.String("a", ":8080", "Address to listen on")
 	flag.Parse()
 
 	logger := log.New(os.Stderr, "", log.LstdFlags)

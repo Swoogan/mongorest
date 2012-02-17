@@ -9,6 +9,8 @@
 	tests are out for now, don't know how to mock the database and web server
 
 DONE:
+- added setting up resources with command line arguments
+- added logging to a file with command line flag
 - add logging 
 - content negotiation for Index
 - content negotiation for Find
