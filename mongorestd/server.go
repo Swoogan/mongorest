@@ -5,6 +5,7 @@ import (
 	"log"
 	"http"
 	"flag"
+	"strings"
 	"syscall"
 	"os/signal"
 	"launchpad.net/mgo"
@@ -19,15 +20,7 @@ var logfile *string = flag.String("o", "", "File to log to")
 func main() {
 	flag.Parse()
 
-	output := os.Stderr
-	if *logfile != "" {
-		var err os.Error
-		output, err = os.OpenFile(*logfile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
-		if err != nil {
-			log.Fatal(err)
-		}
-	}
-	logger := log.New(output, "", log.LstdFlags)
+	logger := createLogger(*logfile)
 
 	if flag.NArg() == 0 {
 		logger.Println("No resources specified, quiting...")
@@ -44,10 +37,7 @@ func main() {
 	logger.Printf("Opening database %v", *dbname)
 	db := session.DB(*dbname)
 
-	for _, resource := range flag.Args() {
-		mongorest.ReadWrite(db, resource, logger)
-		logger.Println("Setting up resource:", resource)
-	}
+	setupResources(flag.Args(), db, logger)
 
 	logger.Printf("About to listen on %v", *address)
 	go func() {
@@ -64,6 +54,45 @@ func main() {
 		case syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGINT:
 			logger.Println("Shutting down...")
 			return
+		}
+	}
+}
+
+func createLogger(logfile string) *log.Logger {
+	output := os.Stderr
+	if logfile != "" {
+		var err os.Error
+		output, err = os.OpenFile(logfile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+	return log.New(output, "", log.LstdFlags)
+}
+
+func parseResource(resource string) (string, string) {
+	res := strings.Split(resource, ",")
+	name := res[0]
+	mode := "rw"
+	if len(res) > 1 && len(res[1]) == 2 {
+		mode = res[1]
+	}
+	return name, mode
+}
+
+func setupResources(resources []string, db mgo.Database, logger *log.Logger) {
+	for _, resource := range resources {
+		name, mode := parseResource(resource)
+		switch mode {
+		case "ro":
+			mongorest.ReadOnly(db, resource, logger)
+			logger.Printf("Setting up resource '%v' in readonly mode", name)
+		case "wo":
+			mongorest.WriteOnly(db, resource, logger)
+			logger.Printf("Setting up resource '%v' in writeonly mode", name)
+		default:
+			mongorest.ReadWrite(db, resource, logger)
+			logger.Printf("Setting up resource '%v' in readwrite mode", name)
 		}
 	}
 }
