@@ -1,12 +1,16 @@
 package main
 
 import (
+	"os"
 	"log"
+	"fmt"
 	"http"
 	"flag"
+	"syscall"
+	"os/signal"
 	"launchpad.net/mgo"
-	//	"bitbucket.org/Swoogan/mongorest"
-	"mongorest"
+	"bitbucket.org/Swoogan/mongorest"
+	//"mongorest"
 )
 
 func main() {
@@ -30,8 +34,20 @@ func main() {
 	mongorest.New(db, "employees")
 
 	log.Printf("About to listen on %v", *address)
-	err = http.ListenAndServe(*address, nil)
-	if err != nil {
-		log.Fatal(err)
+	go func() {
+		err = http.ListenAndServe(*address, nil)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}()
+
+	select {
+	case sig := <-signal.Incoming:
+		fmt.Println("***Caught", sig)
+		switch sig.(os.UnixSignal) {
+		case syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGINT:
+			log.Println("Shutting down...")
+			return
+		}
 	}
 }

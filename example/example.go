@@ -1,6 +1,7 @@
 package main
 
 import (
+	"os"
 	"log"
 	"http"
 	"flag"
@@ -15,23 +16,24 @@ func main() {
 	var address *string = flag.String("a", ":8080", "Address to listen on")
 	flag.Parse()
 
-	log.Printf("Connecting to mongodb at %v", *mongo)
+	logger := log.New(os.Stderr, "", log.LstdFlags)
+	logger.Printf("Connecting to mongodb at %v", *mongo)
 
 	session, err := mgo.Mongo(*mongo)
 	if err != nil {
-		log.Fatal(err)
+		logger.Fatal(err)
 	}
 	defer session.Close()
 
-	log.Printf("Opening database %v", *dbname)
+	logger.Printf("Opening database %v", *dbname)
 	db := session.DB(*dbname)
 
-	mongorest.New(db, "customers")
-	mongorest.New(db, "employees")
+	mongorest.New(db, "customers", logger)
+	mongorest.New(db, "employees", logger)
 
-	log.Printf("About to listen on %v", *address)
+	logger.Printf("About to listen on %v", *address)
 	err = http.ListenAndServe(*address, nil)
 	if err != nil {
-		log.Fatal(err)
+		logger.Fatal(err)
 	}
 }
