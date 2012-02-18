@@ -7,8 +7,8 @@ import (
 	"http"
 	"strings"
 	"strconv"
-	"sre2.googlecode.com/hg/sre2"
 	"launchpad.net/gobson/bson"
+	"sre2.googlecode.com/hg/sre2"
 )
 
 func toString(val interface{}) string {

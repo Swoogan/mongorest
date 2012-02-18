@@ -9,9 +9,9 @@ import (
 	"log"
 	"http"
 	"json"
-	"github.com/Swoogan/rest.go"
 	"launchpad.net/mgo"
 	"launchpad.net/gobson/bson"
+	"github.com/Swoogan/rest.go"
 )
 
 const (
@@ -32,17 +32,21 @@ type updated interface {
 	Updated(Document)
 }
 
+type removed interface {
+	Removed(bson.M)
+}
+
 type Resource struct {
-	DB mgo.Database
-	Name string
-	Mode int
+	DB      mgo.Database
+	Name    string
+	Mode    int
 	Handler interface{}
 }
 
 type MongoRest struct {
-	col mgo.Collection
-	log *log.Logger
-	mode int
+	col     mgo.Collection
+	log     *log.Logger
+	mode    int
 	handler interface{}
 }
 
@@ -147,29 +151,14 @@ func (mr *MongoRest) Create(w http.ResponseWriter, r *http.Request) {
 	// Do insert
 	if result["_id"] == nil {
 		result["_id"] = bson.NewObjectId()
-		if err := mr.col.Insert(result); err != nil {
-			mr.log.Println(err)
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-		if c, ok := mr.handler.(created); ok {
-			c.Created(result)
-		}
-		output := fmt.Sprintf("%v%v", r.URL.String(), result["_id"])
-		rest.Created(w, output)
+		mr.insert(w, r, result)
 		return
 	}
 
 	// Do upsert
 	selector := bson.M{"_id": result["_id"]}
 	if err := mr.col.Find(selector).One(&result); err != nil {
-		if err2 := mr.col.Insert(result); err2 != nil {
-			mr.log.Println(err2)
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-		output := fmt.Sprintf("%v%v", r.URL.String(), result["_id"])
-		rest.Created(w, output)
+		mr.insert(w, r, result)
 		return
 	}
 
@@ -179,6 +168,10 @@ func (mr *MongoRest) Create(w http.ResponseWriter, r *http.Request) {
 		mr.log.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
+	}
+
+	if u, ok := mr.handler.(updated); ok {
+		u.Updated(result)
 	}
 	w.WriteHeader(http.StatusOK)
 	/*
@@ -242,8 +235,12 @@ func (mr *MongoRest) Update(w http.ResponseWriter, idString string, r *http.Requ
 		mr.log.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
 	case newid != nil:
+		mr.insert(w, r, result)
 		rest.Created(w, r.URL.String())
 	default:
+		if u, ok := mr.handler.(updated); ok {
+			u.Updated(result)
+		}
 		rest.NoContent(w)
 	}
 }
@@ -257,20 +254,34 @@ func (mr *MongoRest) Delete(w http.ResponseWriter, idString string, r *http.Requ
 	}
 
 	id := createIdLookup(idString)
-	err := mr.col.Remove(id)
-	if err == mgo.NotFound {
-		// rest.NotFound(w)	// Deleting twice isn't supposed to be an error
-		w.WriteHeader(http.StatusAccepted) // If it's delete, but we don't do anything, just accept it
-	} else if err != nil {
+	switch err := mr.col.Remove(id); {
+	case err == mgo.NotFound:
+		if d, ok := mr.handler.(removed); ok {
+			d.Removed(id)
+		}
+		w.WriteHeader(http.StatusAccepted)
+	case err != nil:
 		mr.log.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
-	} else {
+	default:
 		rest.NoContent(w)
 	}
+}
+
+func (mr *MongoRest) insert(w http.ResponseWriter, r *http.Request, doc Document) {
+	if err := mr.col.Insert(doc); err != nil {
+		mr.log.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	if c, ok := mr.handler.(created); ok {
+		c.Created(doc)
+	}
+	output := fmt.Sprintf("%v%v", r.URL.String(), doc["_id"])
+	rest.Created(w, output)
 }
 
 func Attach(res Resource, log *log.Logger) {
 	mr := &MongoRest{res.DB.C(res.Name), log, res.Mode, res.Handler}
 	rest.Resource(res.Name, mr)
 }
-
