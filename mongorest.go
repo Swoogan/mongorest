@@ -155,13 +155,14 @@ func (mr *MongoRest) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Do upsert
+	// Do upsert...
 	selector := bson.M{"_id": result["_id"]}
 	if err := mr.col.Find(selector).One(&result); err != nil {
 		mr.insert(w, r, result)
 		return
 	}
 
+	// cont upsert
 	result["_id"] = nil, false
 	change := bson.M{"$set": result}
 	if err := mr.col.Update(selector, change); err != nil {
