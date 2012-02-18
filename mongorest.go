@@ -15,12 +15,18 @@ import (
 )
 
 const (
-	readWrite = iota
-	readOnly
-	writeOnly
+	RW = iota
+	RO
+	WO
 )
 
 var formatting = "Valid JSON is required\n"
+
+type Resource struct {
+	Name string
+	DB mgo.Database
+	Mode int
+}
 
 type MongoRest struct {
 	col mgo.Collection
@@ -30,7 +36,7 @@ type MongoRest struct {
 
 // Get all of the documents in the mongo collection 
 func (mr *MongoRest) Index(w http.ResponseWriter, r *http.Request) {
-	if mr.mode == writeOnly {
+	if mr.mode == WO {
 		mr.log.Println("Attempt to read from write only resource")
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
@@ -70,7 +76,7 @@ func (mr *MongoRest) Index(w http.ResponseWriter, r *http.Request) {
 
 // Find a document in the collection, identified by the ID
 func (mr *MongoRest) Find(w http.ResponseWriter, idString string, r *http.Request) {
-	if mr.mode == writeOnly {
+	if mr.mode == WO {
 		mr.log.Println("Attempt to read from write only resource")
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
@@ -103,7 +109,7 @@ func (mr *MongoRest) Find(w http.ResponseWriter, idString string, r *http.Reques
 
 // Create and add a new document to the collection
 func (mr *MongoRest) Create(w http.ResponseWriter, r *http.Request) {
-	if mr.mode == readOnly {
+	if mr.mode == RO {
 		mr.log.Println("Attempt to write to read only resource")
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
@@ -188,7 +194,7 @@ func (mr *MongoRest) Create(w http.ResponseWriter, r *http.Request) {
 
 // Update a document identified by an ID with the data sent as request-body
 func (mr *MongoRest) Update(w http.ResponseWriter, idString string, r *http.Request) {
-	if mr.mode == readOnly {
+	if mr.mode == RO {
 		mr.log.Println("Attempt to write to read only resource")
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
@@ -228,7 +234,7 @@ func (mr *MongoRest) Update(w http.ResponseWriter, idString string, r *http.Requ
 
 // Delete a document identified by ID from the collection
 func (mr *MongoRest) Delete(w http.ResponseWriter, idString string, r *http.Request) {
-	if mr.mode == readOnly {
+	if mr.mode == RO {
 		mr.log.Println("Attempt to delete a read only resource")
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
@@ -247,17 +253,8 @@ func (mr *MongoRest) Delete(w http.ResponseWriter, idString string, r *http.Requ
 	}
 }
 
-func ReadOnly(db mgo.Database, resource string, l *log.Logger) {
-	mr := &MongoRest{db.C(resource), l, readOnly}
-	rest.Resource(resource, mr)
+func Attach(res Resource, log *log.Logger) {
+	mr := &MongoRest{res.DB.C(res.Name), log, res.Mode}
+	rest.Resource(res.Name, mr)
 }
 
-func WriteOnly(db mgo.Database, resource string, l *log.Logger) {
-	mr := &MongoRest{db.C(resource), l, writeOnly}
-	rest.Resource(resource, mr)
-}
-
-func ReadWrite(db mgo.Database, resource string, l *log.Logger) {
-	mr := &MongoRest{db.C(resource), l, readWrite}
-	rest.Resource(resource, mr)
-}

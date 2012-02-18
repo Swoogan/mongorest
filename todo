@@ -7,6 +7,7 @@
 	tests are out for now, don't know how to mock the database and web server
 
 DONE:
+- create resource struct
 - add readonly mode
 - added setting up resources with command line arguments
 - added logging to a file with command line flag
