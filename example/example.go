@@ -29,8 +29,10 @@ func main() {
 	logger.Printf("Opening database %v", *dbname)
 	db := session.DB(*dbname)
 
-	mongorest.ReadWrite(db, "customers", logger)
-	mongorest.ReadWrite(db, "employees", logger)
+	cust := mongorest.Resource{DB: db, Name: "customers"}
+	mongorest.Attach(cust, logger)
+	emp := mongorest.Resource{DB: db, Name: "employees"}
+	mongorest.Attach(emp, logger)
 
 	logger.Printf("About to listen on %v", *address)
 	err = http.ListenAndServe(*address, nil)
