@@ -23,7 +23,7 @@ func toString(val interface{}) string {
 	return "unknown"
 }
 
-func writeHtml(w http.ResponseWriter, items []map[string]interface{}) {
+func writeHtml(w http.ResponseWriter, items []Document) {
 	for _, item := range items {
 		for key, value := range item {
 			fmt.Fprintf(w, "%v: %v<br />", key, value)

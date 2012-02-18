@@ -22,16 +22,28 @@ const (
 
 var formatting = "Valid JSON is required\n"
 
+type Document map[string]interface{}
+
+type created interface {
+	Created(Document)
+}
+
+type updated interface {
+	Updated(Document)
+}
+
 type Resource struct {
-	Name string
 	DB mgo.Database
+	Name string
 	Mode int
+	Handler interface{}
 }
 
 type MongoRest struct {
 	col mgo.Collection
 	log *log.Logger
 	mode int
+	handler interface{}
 }
 
 // Get all of the documents in the mongo collection 
@@ -42,7 +54,7 @@ func (mr *MongoRest) Index(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var lookup map[string]interface{}
+	var lookup Document
 	if len(r.URL.RawQuery) > 0 {
 		var err os.Error
 		if lookup, err = parseQuery(r.URL.Query()); err != nil {
@@ -52,7 +64,7 @@ func (mr *MongoRest) Index(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	var result []map[string]interface{}
+	var result []Document
 	err := mr.col.Find(lookup).All(&result)
 	if err != nil {
 		mr.log.Println(err)
@@ -68,6 +80,7 @@ func (mr *MongoRest) Index(w http.ResponseWriter, r *http.Request) {
 		enc.Encode(&result)
 	case "text/html":
 		w.Header().Set("content-type", ctype)
+		//TODO: Implement templating here
 		writeHtml(w, result)
 	default:
 		w.WriteHeader(http.StatusNotAcceptable)
@@ -82,7 +95,7 @@ func (mr *MongoRest) Find(w http.ResponseWriter, idString string, r *http.Reques
 		return
 	}
 
-	var result map[string]interface{}
+	var result Document
 	id := createIdLookup(idString)
 	if err := mr.col.Find(id).One(&result); err != nil {
 		mr.log.Println(err)
@@ -123,7 +136,7 @@ func (mr *MongoRest) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	dec := json.NewDecoder(r.Body)
-	var result map[string]interface{}
+	var result Document
 	if err := dec.Decode(&result); err != nil {
 		mr.log.Println(err)
 		//TODO: should this be a 406 or 415?
@@ -138,6 +151,9 @@ func (mr *MongoRest) Create(w http.ResponseWriter, r *http.Request) {
 			mr.log.Println(err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
+		}
+		if c, ok := mr.handler.(created); ok {
+			c.Created(result)
 		}
 		output := fmt.Sprintf("%v%v", r.URL.String(), result["_id"])
 		rest.Created(w, output)
@@ -208,7 +224,7 @@ func (mr *MongoRest) Update(w http.ResponseWriter, idString string, r *http.Requ
 	}
 
 	dec := json.NewDecoder(r.Body)
-	var result map[string]interface{}
+	var result Document
 
 	if err := dec.Decode(&result); err != nil {
 		mr.log.Println(err)
@@ -254,7 +270,7 @@ func (mr *MongoRest) Delete(w http.ResponseWriter, idString string, r *http.Requ
 }
 
 func Attach(res Resource, log *log.Logger) {
-	mr := &MongoRest{res.DB.C(res.Name), log, res.Mode}
+	mr := &MongoRest{res.DB.C(res.Name), log, res.Mode, res.Handler}
 	rest.Resource(res.Name, mr)
 }
 
