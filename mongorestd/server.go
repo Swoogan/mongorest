@@ -85,13 +85,16 @@ func setupResources(resources []string, db mgo.Database, logger *log.Logger) {
 		name, mode := parseResource(resource)
 		switch mode {
 		case "ro":
-			mongorest.ReadOnly(db, resource, logger)
+			res := mongorest.Resource{DB: db, Name: name, Mode: mongorest.RO}
+			mongorest.Attach(res, logger)
 			logger.Printf("Setting up resource '%v' in readonly mode", name)
 		case "wo":
-			mongorest.WriteOnly(db, resource, logger)
+			res := mongorest.Resource{DB: db, Name: name, Mode: mongorest.WO}
+			mongorest.Attach(res, logger)
 			logger.Printf("Setting up resource '%v' in writeonly mode", name)
 		default:
-			mongorest.ReadWrite(db, resource, logger)
+			res := mongorest.Resource{DB: db, Name: name}
+			mongorest.Attach(res, logger)
 			logger.Printf("Setting up resource '%v' in readwrite mode", name)
 		}
 	}
