@@ -59,10 +59,10 @@ func (mr *MongoRest) Index(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var lookup Document
+	var options queryOptions
 	if len(r.URL.RawQuery) > 0 {
 		var err os.Error
-		if lookup, err = parseQuery(r.URL.Query()); err != nil {
+		if options, err = parseQuery(r.URL.Query()); err != nil {
 			mr.log.Println(err)
 			rest.BadRequest(w, err.String())
 			return
@@ -70,21 +70,21 @@ func (mr *MongoRest) Index(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var result []Document
-	err := mr.col.Find(lookup).All(&result)
-	if err != nil {
+	query := mr.col.Find(options.criteria)
+	if err := query.All(&result); err != nil {
 		mr.log.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	ctype := contentType(r.Header.Get("accept"))
-	switch ctype {
+	mtype := mediaType(r.Header.Get("accept"))
+	switch mtype {
 	case "application/json":
 		enc := json.NewEncoder(w)
-		w.Header().Set("content-type", ctype)
+		w.Header().Set("content-type", mtype)
 		enc.Encode(&result)
 	case "text/html":
-		w.Header().Set("content-type", ctype)
+		w.Header().Set("content-type", mtype)
 		//TODO: Implement templating here
 		writeHtml(w, result)
 	default:
@@ -108,14 +108,14 @@ func (mr *MongoRest) Find(w http.ResponseWriter, idString string, r *http.Reques
 		return
 	}
 
-	ctype := contentType(r.Header.Get("accept"))
-	switch ctype {
+	mtype := mediaType(r.Header.Get("accept"))
+	switch mtype {
 	case "application/json":
 		enc := json.NewEncoder(w)
-		w.Header().Set("content-type", ctype)
+		w.Header().Set("content-type", mtype)
 		enc.Encode(&result)
 	case "text/html":
-		w.Header().Set("content-type", ctype)
+		w.Header().Set("content-type", mtype)
 		//TODO: Implement templating here
 		for key, value := range result {
 			fmt.Fprintf(w, "%v: %v<br />", key, value)
