@@ -9,6 +9,7 @@ import (
 	"log"
 	"http"
 	"json"
+	"strings"
 	"launchpad.net/mgo"
 	"launchpad.net/gobson/bson"
 	"github.com/Swoogan/rest.go"
@@ -133,7 +134,7 @@ func (mr *MongoRest) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctype := r.Header.Get("content-type")
-	if ctype != "application/json" {
+	if !strings.Contains(ctype, "application/json") {
 		mr.log.Println("Content type not implemented:", ctype)
 		rest.NotImplemented(w)
 		return
@@ -211,7 +212,7 @@ func (mr *MongoRest) Update(w http.ResponseWriter, idString string, r *http.Requ
 	}
 
 	ctype := r.Header.Get("content-type")
-	if ctype != "application/json" {
+	if !strings.Contains(ctype, "application/json") {
 		mr.log.Println("Content type not implemented:", ctype)
 		rest.NotImplemented(w)
 		return
