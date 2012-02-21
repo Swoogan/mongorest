@@ -68,24 +68,14 @@ func parseQuery(query map[string][]string) (queryOptions, os.Error) {
 				if len(values) > 1 {
 					return options, os.NewError("Can only have one criteria specified")
 				}
-				/*
-				if value, err := url.QueryUnescape(values[0]); err != nil {
-					return options, os.NewError("Could not unescape criteria query string")
-				}
-				*/
 				value := []byte(values[0])
 				if er := json.Unmarshal(value, &options.criteria); er != nil {
 					return options, err
 				}
 			case "selector":
 				if len(values) > 1 {
-					return options, os.NewError("Can only have one criteria specified")
+					return options, os.NewError("Can only have one selector specified")
 				}
-				/*
-				if value, err := url.QueryUnescape(values[0]); err != nil {
-					return options, os.NewError("Could not unescape criteria query string")
-				}
-				*/
 				value := []byte(values[0])
 				if err := json.Unmarshal(value, &options.selector); err != nil {
 					return options, err
@@ -105,7 +95,6 @@ func parseAccept(accept string) []string {
 		if !contains(result, clean) {
 			result = append(result, clean)
 		}
-		//result[i] = strings.Split(typequal[0], "/")
 	}
 	return result
 }
