@@ -71,7 +71,8 @@ func (mr *MongoRest) Index(w http.ResponseWriter, r *http.Request) {
 
 	var result []Document
 	query := mr.col.Find(options.criteria)
-	if err := query.All(&result); err != nil {
+	iter := query.Select(options.selector)
+	if err := iter.All(&result); err != nil {
 		mr.log.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
