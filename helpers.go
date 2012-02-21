@@ -3,8 +3,8 @@ package mongorest
 import (
 	"os"
 	"fmt"
-	"log"
 	"http"
+	"json"
 	"strings"
 	"strconv"
 	"launchpad.net/gobson/bson"
@@ -48,39 +48,53 @@ func createIdLookup(id string) bson.M {
 	return bson.M{"_id": id}
 }
 
-func parseQuery(query map[string][]string) (map[string]interface{}, os.Error) {
+type queryOptions struct {
+	criteria Document
+	selector Document
+	/*
+	sort Document
+	skip int
+	limit int
+	*/
+}
+
+func parseQuery(query map[string][]string) (queryOptions, os.Error) {
 	var err os.Error
-	result := make(map[string]interface{})
+	var options queryOptions
 
 	for key, values := range query {
-		if len(values) == 1 {
-			result[key], err = convertType(values[0])
-		} else if len(values) > 1 {
-			log.Println("Arrays are handled with [a1,a2,...,an] syntax")
+		switch key {
+			case "criteria":
+				if len(values) > 1 {
+					return options, os.NewError("Can only have one criteria specified")
+				}
+				/*
+				if value, err := url.QueryUnescape(values[0]); err != nil {
+					return options, os.NewError("Could not unescape criteria query string")
+				}
+				*/
+				value := []byte(values[0])
+				if er := json.Unmarshal(value, &options.criteria); er != nil {
+					return options, err
+				}
+			case "selector":
+				if len(values) > 1 {
+					return options, os.NewError("Can only have one criteria specified")
+				}
+				/*
+				if value, err := url.QueryUnescape(values[0]); err != nil {
+					return options, os.NewError("Could not unescape criteria query string")
+				}
+				*/
+				value := []byte(values[0])
+				if err := json.Unmarshal(value, &options.selector); err != nil {
+					return options, err
+				}
 		}
 	}
 
-	return result, err
+	return options, err
 }
-
-func convertType(value string) (interface{}, os.Error) {
-	switch {
-	case strings.Index(value, "s:") != -1:
-		return value[2:], nil
-	case strings.Index(value, "i:") != -1:
-		return strconv.Atoi(value[2:])
-	}
-
-	// default to string
-	return value, nil
-}
-
-/*
-type mediaType struct {
-	mtype string
-	subtype string
-}
-*/
 
 func parseAccept(accept string) []string {
 	types := strings.Split(accept, ",")
@@ -105,24 +119,24 @@ func contains(haystack []string, needle string) bool {
 	return false
 }
 
-func contentType(accept string) string {
-	var media string
+func mediaType(accept string) string {
 	if accept == "" {
+		return "application/json"
+	}
+
+	var media string
+	types := parseAccept(accept)
+	switch {
+	case contains(types, "application/json"):
 		media = "application/json"
-	} else {
-		types := parseAccept(accept)
-		switch {
-		case contains(types, "application/json"):
-			media = "application/json"
-		case contains(types, "text/html"):
-			media = "text/html"
-		case contains(types, "application/*"):
-			media = "application/json"
-		case contains(types, "text/*"):
-			media = "text/html"
-		case contains(types, "*/*"):
-			media = "application/json"
-		}
+	case contains(types, "text/html"):
+		media = "text/html"
+	case contains(types, "application/*"):
+		media = "application/json"
+	case contains(types, "text/*"):
+		media = "text/html"
+	case contains(types, "*/*"):
+		media = "application/json"
 	}
 	return media
 }
