@@ -77,6 +77,8 @@ func (mr *MongoRest) Index(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	mr.log.Println("Serving GET on", r.URL)
+
 	mtype := mediaType(r.Header.Get("accept"))
 	switch mtype {
 	case "application/json":
@@ -107,6 +109,8 @@ func (mr *MongoRest) Find(w http.ResponseWriter, idString string, r *http.Reques
 		rest.NotFound(w)
 		return
 	}
+
+	mr.log.Println("Serving GET on", r.URL)
 
 	mtype := mediaType(r.Header.Get("accept"))
 	switch mtype {
@@ -148,6 +152,8 @@ func (mr *MongoRest) Create(w http.ResponseWriter, r *http.Request) {
 		rest.BadRequest(w, formatting)
 		return
 	}
+
+	mr.log.Println("Serving POST on", r.URL)
 
 	// Do insert
 	if result["_id"] == nil {
@@ -227,6 +233,8 @@ func (mr *MongoRest) Update(w http.ResponseWriter, idString string, r *http.Requ
 		return
 	}
 
+	mr.log.Println("Serving PUT on", r.URL)
+
 	id := createIdLookup(idString)
 	result["_id"] = id["_id"]
 
@@ -254,6 +262,8 @@ func (mr *MongoRest) Delete(w http.ResponseWriter, idString string, r *http.Requ
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
+
+	mr.log.Println("Serving DELETE on", r.URL)
 
 	id := createIdLookup(idString)
 	switch err := mr.col.Remove(id); {
