@@ -290,7 +290,7 @@ func (mr *MongoRest) insert(w http.ResponseWriter, r *http.Request, doc Document
 	if c, ok := mr.handler.(created); ok {
 		c.Created(doc)
 	}
-	output := fmt.Sprintf("%v%v", r.URL.String(), doc["_id"])
+	output := fmt.Sprintf("%v%v", r.URL.String(), toString(doc["_id"]))
 	rest.Created(w, output)
 }
 

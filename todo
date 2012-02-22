@@ -11,6 +11,7 @@
 	tests are out for now, don't know how to mock the database and web server
 
 DONE:
+- bug: objectIds being returned from post in wrong format
 - add "event handlers"
 - create resource struct
 - add readonly mode
