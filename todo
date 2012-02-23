@@ -1,3 +1,4 @@
+- sigstp (ctrl+z) causing mongorestd to quit
 - add sort, limit and skip query string parameters
 - make the mode constants string (ro, rw, wo)
 - add usage statement to mongorestd
