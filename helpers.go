@@ -1,18 +1,18 @@
 package mongorest
 
 import (
-	"os"
 	"fmt"
-	"http"
-	"json"
+	"regexp"
+	"errors"
 	"strings"
 	"strconv"
-	"launchpad.net/gobson/bson"
-	"sre2.googlecode.com/hg/sre2"
+	"net/http"
+	"encoding/json"
+	"labix.org/v2/mgo/bson"
 )
 
 func toString(val interface{}) string {
-	switch v := val.(type) {
+	switch val.(type) {
 	case int, int32, int64, float32, float64:
 		return fmt.Sprintf("%v", val)
 	case bson.ObjectId:
@@ -34,13 +34,13 @@ func writeHtml(w http.ResponseWriter, items []Document) {
 
 func createIdLookup(id string) bson.M {
 	// TODO: add dates to this
-	hex := sre2.MustParse("^[0-9a-f]{24}$")
-	number := sre2.MustParse("^[0-9]+$")
+	hex := regexp.MustCompile("^[0-9a-f]{24}$")
+	number := regexp.MustCompile("^[0-9]+$")
 
-	if hex.Match(id) {
+	if hex.MatchString(id) {
 		return bson.M{"_id": bson.ObjectIdHex(id)}
-	} else if number.Match(id) {
-		if i, err := strconv.Atoi64(id); err == nil {
+	} else if number.MatchString(id) {
+		if i, err := strconv.Atoi(id); err == nil {
 			return bson.M{"_id": i}
 		}
 	}
@@ -58,23 +58,23 @@ type queryOptions struct {
 	*/
 }
 
-func parseQuery(query map[string][]string) (queryOptions, os.Error) {
-	var err os.Error
+func parseQuery(query map[string][]string) (queryOptions, error) {
+	var err error
 	var options queryOptions
 
 	for key, values := range query {
 		switch key {
 			case "criteria":
 				if len(values) > 1 {
-					return options, os.NewError("Can only have one criteria specified")
+					return options, errors.New("Can only have one criteria specified")
 				}
 				value := []byte(values[0])
-				if er := json.Unmarshal(value, &options.criteria); er != nil {
+				if err := json.Unmarshal(value, &options.criteria); err != nil {
 					return options, err
 				}
 			case "selector":
 				if len(values) > 1 {
-					return options, os.NewError("Can only have one selector specified")
+					return options, errors.New("Can only have one selector specified")
 				}
 				value := []byte(values[0])
 				if err := json.Unmarshal(value, &options.selector); err != nil {
