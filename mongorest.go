@@ -4,15 +4,14 @@ A Go (golang) RESTful HTTP server library for exposing MongoDB document collecti
 package mongorest
 
 import (
-	"os"
 	"fmt"
 	"log"
-	"http"
-	"json"
 	"strings"
-	"launchpad.net/mgo"
-	"launchpad.net/gobson/bson"
-	"github.com/Swoogan/rest.go"
+	"net/http"
+	"encoding/json"
+	"labix.org/v2/mgo"
+	"labix.org/v2/mgo/bson"
+	"github.com/Swoogan/rest"
 )
 
 const (
@@ -45,7 +44,7 @@ type Resource struct {
 }
 
 type MongoRest struct {
-	col     mgo.Collection
+	col     *mgo.Collection
 	log     *log.Logger
 	mode    int
 	handler interface{}
@@ -61,10 +60,10 @@ func (mr *MongoRest) Index(w http.ResponseWriter, r *http.Request) {
 
 	var options queryOptions
 	if len(r.URL.RawQuery) > 0 {
-		var err os.Error
+		var err error
 		if options, err = parseQuery(r.URL.Query()); err != nil {
 			mr.log.Println(err)
-			rest.BadRequest(w, err.String())
+			rest.BadRequest(w, fmt.Sprint(err))
 			return
 		}
 	}
@@ -171,7 +170,7 @@ func (mr *MongoRest) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// cont upsert
-	result["_id"] = nil, false
+	result["_id"] = nil
 	change := bson.M{"$set": result}
 	if err := mr.col.Update(selector, change); err != nil {
 		mr.log.Println(err)
@@ -268,7 +267,7 @@ func (mr *MongoRest) Delete(w http.ResponseWriter, idString string, r *http.Requ
 
 	id := createIdLookup(idString)
 	switch err := mr.col.Remove(id); {
-	case err == mgo.NotFound:
+	case err == mgo.ErrNotFound:
 		if d, ok := mr.handler.(removed); ok {
 			d.Removed(id)
 		}
