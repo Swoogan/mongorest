@@ -3,12 +3,11 @@ package main
 import (
 	"os"
 	"log"
-	"http"
+	"net/http"
 	"flag"
 	"strings"
-	"syscall"
 	"os/signal"
-	"launchpad.net/mgo"
+	"labix.org/v2/mgo"
 	"bitbucket.org/Swoogan/mongorest"
 )
 
@@ -28,7 +27,7 @@ func main() {
 	}
 
 	logger.Printf("Connecting to mongodb at %v", *mongo)
-	session, err := mgo.Mongo(*mongo)
+	session, err := mgo.Dial(*mongo)
 	if err != nil {
 		logger.Fatal(err)
 	}
@@ -47,21 +46,20 @@ func main() {
 		}
 	}()
 
-	select {
-	case sig := <-signal.Incoming:
-		logger.Println("***Caught", sig)
-		switch sig.(os.UnixSignal) {
-		case syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGINT:
-			logger.Println("Shutting down...")
-			return
-		}
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+//	go func() {
+	for sig := range c {
+		log.Printf("Received %v, shutting down...", sig)
+		os.Exit(1)
 	}
+//	}()
 }
 
 func createLogger(logfile string) *log.Logger {
 	output := os.Stderr
 	if logfile != "" {
-		var err os.Error
+		var err error
 		output, err = os.OpenFile(logfile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 		if err != nil {
 			log.Fatal(err)
@@ -80,7 +78,7 @@ func parseResource(resource string) (string, string) {
 	return name, mode
 }
 
-func setupResources(resources []string, db mgo.Database, logger *log.Logger) {
+func setupResources(resources []string, db *mgo.Database, logger *log.Logger) {
 	for _, resource := range resources {
 		name, mode := parseResource(resource)
 		switch mode {

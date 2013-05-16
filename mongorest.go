@@ -37,7 +37,7 @@ type removed interface {
 }
 
 type Resource struct {
-	DB      mgo.Database
+	DB      *mgo.Database
 	Name    string
 	Mode    int
 	Handler interface{}
