@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"net/http"
 	"encoding/json"
-	"labix.org/v2/mgo/bson"
+	"gopkg.in/mgo.v2/bson"
 )
 
 func toString(val interface{}) string {

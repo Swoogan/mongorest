@@ -7,7 +7,7 @@ import (
 	"flag"
 	"strings"
 	"os/signal"
-	"labix.org/v2/mgo"
+	"gopkg.in/mgo.v2"
 	"bitbucket.org/Swoogan/mongorest"
 )
 
