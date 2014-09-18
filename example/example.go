@@ -3,11 +3,11 @@ package main
 import (
 	"os"
 	"log"
-	"http"
 	"flag"
-	"launchpad.net/mgo"
-	//	"bitbucket.org/Swoogan/mongorest"
-	"mongorest"
+	"net/http"
+
+	"gopkg.in/mgo.v2"
+	"bitbucket.org/Swoogan/mongorest"
 )
 
 var mongo *string = flag.String("m", "localhost", "Mongodb address")
