@@ -20,7 +20,7 @@ func main() {
 	logger := log.New(os.Stderr, "", log.LstdFlags)
 	logger.Printf("Connecting to mongodb at %v", *mongo)
 
-	session, err := mgo.Mongo(*mongo)
+	session, err := mgo.Dial(*mongo)
 	if err != nil {
 		logger.Fatal(err)
 	}
