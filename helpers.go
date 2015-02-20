@@ -1,13 +1,14 @@
 package mongorest
 
 import (
-	"fmt"
-	"regexp"
-	"errors"
-	"strings"
-	"strconv"
-	"net/http"
 	"encoding/json"
+	"errors"
+	"fmt"
+	"net/http"
+	"regexp"
+	"strconv"
+	"strings"
+
 	"gopkg.in/mgo.v2/bson"
 )
 
@@ -52,9 +53,9 @@ type queryOptions struct {
 	criteria Document
 	selector Document
 	/*
-	sort Document
-	skip int
-	limit int
+		sort Document
+		skip int
+		limit int
 	*/
 }
 
@@ -64,22 +65,22 @@ func parseQuery(query map[string][]string) (queryOptions, error) {
 
 	for key, values := range query {
 		switch key {
-			case "criteria":
-				if len(values) > 1 {
-					return options, errors.New("Can only have one criteria specified")
-				}
-				value := []byte(values[0])
-				if err := json.Unmarshal(value, &options.criteria); err != nil {
-					return options, err
-				}
-			case "selector":
-				if len(values) > 1 {
-					return options, errors.New("Can only have one selector specified")
-				}
-				value := []byte(values[0])
-				if err := json.Unmarshal(value, &options.selector); err != nil {
-					return options, err
-				}
+		case "criteria":
+			if len(values) > 1 {
+				return options, errors.New("Can only have one criteria specified")
+			}
+			value := []byte(values[0])
+			if err := json.Unmarshal(value, &options.criteria); err != nil {
+				return options, err
+			}
+		case "selector":
+			if len(values) > 1 {
+				return options, errors.New("Can only have one selector specified")
+			}
+			value := []byte(values[0])
+			if err := json.Unmarshal(value, &options.selector); err != nil {
+				return options, err
+			}
 		}
 	}
 
