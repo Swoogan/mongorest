@@ -4,14 +4,14 @@ A Go (golang) RESTful HTTP server library for exposing MongoDB document collecti
 package mongorest
 
 import (
-	"fmt"
-	"log"
-	"strings"
-	"net/http"
 	"encoding/json"
+	"fmt"
+	"github.com/Swoogan/rest"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
-	"github.com/Swoogan/rest"
+	"log"
+	"net/http"
+	"strings"
 )
 
 const (
@@ -50,7 +50,7 @@ type MongoRest struct {
 	handler interface{}
 }
 
-// Get all of the documents in the mongo collection 
+// Get all of the documents in the mongo collection
 func (mr *MongoRest) Index(w http.ResponseWriter, r *http.Request) {
 	if mr.mode == WO {
 		mr.log.Println("Attempt to read from write only resource")
@@ -290,6 +290,7 @@ func (mr *MongoRest) insert(w http.ResponseWriter, r *http.Request, doc Document
 		c.Created(doc)
 	}
 	output := fmt.Sprintf("%v%v", r.URL.String(), toString(doc["_id"]))
+	mr.log.Println("New location: " + output)
 	rest.Created(w, output)
 }
 

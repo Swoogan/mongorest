@@ -1,14 +1,14 @@
 package main
 
 import (
-	"os"
+	"bitbucket.org/Swoogan/mongorest"
+	"flag"
+	"gopkg.in/mgo.v2"
 	"log"
 	"net/http"
-	"flag"
-	"strings"
+	"os"
 	"os/signal"
-	"gopkg.in/mgo.v2"
-	"bitbucket.org/Swoogan/mongorest"
+	"strings"
 )
 
 var mongo *string = flag.String("m", "localhost", "Mongodb address")
@@ -47,13 +47,16 @@ func main() {
 	}()
 
 	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt)
-//	go func() {
+	signal.Notify(c,
+		syscall.SIGHUP,
+		syscall.SIGINT,
+		syscall.SIGTERM,
+		syscall.SIGQUIT)
+
 	for sig := range c {
 		log.Printf("Received %v, shutting down...", sig)
 		os.Exit(1)
 	}
-//	}()
 }
 
 func createLogger(logfile string) *log.Logger {
